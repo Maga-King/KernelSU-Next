@@ -55,7 +55,8 @@ class ManagerSigningTests(unittest.TestCase):
         self.assertNotIn("PRIVATE KEY", header)
         source = (ROOT / "kernel/manager/apk_sign.c").read_text()
         self.assertIn("ksu_manager_cert_size_allowed(certificate_size, expected_size)", source)
-        self.assertIn("ksu_manager_cert_allowed(certificate_size, hash_str, expected_size", source)
+        self.assertRegex(source, r"ksu_manager_cert_allowed\(certificate_size,\s*hash_str,\s*"
+                                 r"expected_size,\s*expected_sha256\)")
         self.assertIn("if (v2_signing_blocks != 1)", source)
         kbuild = (ROOT / "kernel/Kbuild").read_text()
         self.assertIn("79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7", kbuild)

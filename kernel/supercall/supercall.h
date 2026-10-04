@@ -11,11 +11,11 @@ typedef bool (*ksu_perm_check_t)(void);
 
 // IOCTL command mapping
 struct ksu_ioctl_cmd_map {
-    unsigned int cmd;
-    const char *name;
-    ksu_ioctl_handler_t handler;
-    ksu_perm_check_t perm_check; // Permission check function
-    bool allow_su_session;
+	unsigned int cmd;
+	const char *name;
+	ksu_ioctl_handler_t handler;
+	ksu_perm_check_t perm_check; // Permission check function
+	bool allow_su_session;
 };
 
 // Install KSU fd to current process

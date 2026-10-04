@@ -160,9 +160,11 @@ do_orig_stat:
 	return ksu_syscall_table[orig_nr](regs);
 }
 
-static long ksu_handle_execve_sucompat_common(const char __user **filename_user,
-					      const char __user *const __user *argv_user, unsigned long envp,
-					      bool execveat, int orig_nr, struct pt_regs *regs)
+static long
+ksu_handle_execve_sucompat_common(const char __user **filename_user,
+				  const char __user *const __user *argv_user,
+				  unsigned long envp, bool execveat,
+				  int orig_nr, struct pt_regs *regs)
 {
 	const char __user *fn;
 	struct ksu_sulog_pending_event *pending_sucompat = NULL;
@@ -174,7 +176,8 @@ static long ksu_handle_execve_sucompat_common(const char __user **filename_user,
 	struct file *ksud_file;
 	const struct cred *old_cred;
 
-	if (execveat && ((int)PT_REGS_SYSCALL_PARM1(regs) != AT_FDCWD || (int)PT_REGS_PARM5(regs) != 0))
+	if (execveat && ((int)PT_REGS_SYSCALL_PARM1(regs) != AT_FDCWD ||
+			 (int)PT_REGS_PARM5(regs) != 0))
 		goto do_orig_execve;
 
 	if (unlikely(!filename_user))
@@ -216,7 +219,8 @@ static long ksu_handle_execve_sucompat_common(const char __user **filename_user,
 
 	fd_install(tmp_fd, ksud_file);
 
-	pending_sucompat = ksu_sulog_capture_sucompat(*filename_user, argv_user, GFP_KERNEL);
+	pending_sucompat = ksu_sulog_capture_sucompat(*filename_user, argv_user,
+						      GFP_KERNEL);
 	// execve(file, argv, environ)
 	// execveat(fd, file, argv, environ, flags)
 	orig_regs[0] = PT_REGS_SYSCALL_PARM1(regs);
@@ -258,16 +262,22 @@ do_orig_execve:
 	return ksu_syscall_table[orig_nr](regs);
 }
 
-long ksu_handle_execve_sucompat(const char __user **filename_user, int orig_nr, struct pt_regs *regs)
+long ksu_handle_execve_sucompat(const char __user **filename_user, int orig_nr,
+				struct pt_regs *regs)
 {
-	return ksu_handle_execve_sucompat_common(filename_user, (const char __user *const __user *)PT_REGS_PARM2(regs),
-						 PT_REGS_PARM3(regs), false, orig_nr, regs);
+	return ksu_handle_execve_sucompat_common(
+		filename_user,
+		(const char __user *const __user *)PT_REGS_PARM2(regs),
+		PT_REGS_PARM3(regs), false, orig_nr, regs);
 }
 
-long ksu_handle_execveat_sucompat(const char __user **filename_user, int orig_nr, struct pt_regs *regs)
+long ksu_handle_execveat_sucompat(const char __user **filename_user,
+				  int orig_nr, struct pt_regs *regs)
 {
-	return ksu_handle_execve_sucompat_common(filename_user, (const char __user *const __user *)PT_REGS_PARM3(regs),
-						 PT_REGS_SYSCALL_PARM4(regs), true, orig_nr, regs);
+	return ksu_handle_execve_sucompat_common(
+		filename_user,
+		(const char __user *const __user *)PT_REGS_PARM3(regs),
+		PT_REGS_SYSCALL_PARM4(regs), true, orig_nr, regs);
 }
 
 // sucompat: permitted process can execute 'su' to gain root access.

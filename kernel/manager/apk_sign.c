@@ -43,7 +43,7 @@ static struct sdesc *init_sdesc(struct crypto_shash *alg)
 }
 
 static int calc_hash(struct crypto_shash *alg, const unsigned char *data,
-                     unsigned int datalen, unsigned char *digest)
+		     unsigned int datalen, unsigned char *digest)
 {
 	struct sdesc *sdesc;
 	int ret;
@@ -60,7 +60,7 @@ static int calc_hash(struct crypto_shash *alg, const unsigned char *data,
 }
 
 static int ksu_sha256(const unsigned char *data, unsigned int datalen,
-                      unsigned char *digest)
+		      unsigned char *digest)
 {
 	struct crypto_shash *alg;
 	char *hash_alg_name = "sha256";
@@ -76,7 +76,8 @@ static int ksu_sha256(const unsigned char *data, unsigned int datalen,
 	return ret;
 }
 
-static bool read_exact(struct file *fp, void *buffer, size_t size, loff_t *pos, loff_t end)
+static bool read_exact(struct file *fp, void *buffer, size_t size, loff_t *pos,
+		       loff_t end)
 {
 	if (*pos < 0 || *pos > end || size > (size_t)(end - *pos))
 		return false;
@@ -84,7 +85,8 @@ static bool read_exact(struct file *fp, void *buffer, size_t size, loff_t *pos, 
 	return kernel_read(fp, buffer, size, pos) == (ssize_t)size;
 }
 
-static bool read_length_prefixed_end(struct file *fp, loff_t *pos, loff_t container_end, loff_t *value_end)
+static bool read_length_prefixed_end(struct file *fp, loff_t *pos,
+				     loff_t container_end, loff_t *value_end)
 {
 	u32 length;
 
@@ -97,25 +99,29 @@ static bool read_length_prefixed_end(struct file *fp, loff_t *pos, loff_t contai
 	return true;
 }
 
-static bool check_block(struct file *fp, loff_t *pos, loff_t block_end, unsigned expected_size,
-			const char *expected_sha256)
+static bool check_block(struct file *fp, loff_t *pos, loff_t block_end,
+			unsigned expected_size, const char *expected_sha256)
 {
-	loff_t signers_end, signer_end, signed_data_end, digests_end, certificates_end;
+	loff_t signers_end, signer_end, signed_data_end, digests_end,
+		certificates_end;
 	u32 certificate_size;
 
 	// v2 block: signers sequence -> first signer -> signed data -> digests
 	if (!read_length_prefixed_end(fp, pos, block_end, &signers_end) ||
-		!read_length_prefixed_end(fp, pos, signers_end, &signer_end) ||
-		!read_length_prefixed_end(fp, pos, signer_end, &signed_data_end) ||
-		!read_length_prefixed_end(fp, pos, signed_data_end, &digests_end))
+	    !read_length_prefixed_end(fp, pos, signers_end, &signer_end) ||
+	    !read_length_prefixed_end(fp, pos, signer_end, &signed_data_end) ||
+	    !read_length_prefixed_end(fp, pos, signed_data_end, &digests_end))
 		return false;
 
 	*pos = digests_end;
-	if (!read_length_prefixed_end(fp, pos, signed_data_end, &certificates_end) ||
-		!read_exact(fp, &certificate_size, sizeof(certificate_size), pos, certificates_end))
+	if (!read_length_prefixed_end(fp, pos, signed_data_end,
+				      &certificates_end) ||
+	    !read_exact(fp, &certificate_size, sizeof(certificate_size), pos,
+			certificates_end))
 		return false;
 
-	if (certificate_size > INT_MAX || certificate_size > (u64)(certificates_end - *pos))
+	if (certificate_size > INT_MAX ||
+	    certificate_size > (u64)(certificates_end - *pos))
 		return false;
 
 #define CERT_MAX_LENGTH 1024
@@ -142,13 +148,13 @@ static bool check_block(struct file *fp, loff_t *pos, loff_t block_end, unsigned
 
 	bin2hex(hash_str, digest, SHA256_DIGEST_SIZE);
 	pr_info("sha256: %s, expected: %s\n", hash_str, expected_sha256);
-	return ksu_manager_cert_allowed(certificate_size, hash_str, expected_size,
-					expected_sha256);
+	return ksu_manager_cert_allowed(certificate_size, hash_str,
+					expected_size, expected_sha256);
 }
 
 static __always_inline bool check_v2_signature(char *path,
-                                               unsigned expected_size,
-                                               const char *expected_sha256)
+					       unsigned expected_size,
+					       const char *expected_sha256)
 {
 	unsigned char buffer[0x10] = { 0 };
 	u32 cd_offset, cd_size;
@@ -176,11 +182,13 @@ static __always_inline bool check_v2_signature(char *path,
 		unsigned short comment_size;
 		u32 magic;
 		pos = file_size - i - 2;
-		if (!read_exact(fp, &comment_size, sizeof(comment_size), &pos, file_size))
+		if (!read_exact(fp, &comment_size, sizeof(comment_size), &pos,
+				file_size))
 			goto clean;
 		if (comment_size == i) {
 			pos -= 22;
-			if (!read_exact(fp, &magic, sizeof(magic), &pos, file_size))
+			if (!read_exact(fp, &magic, sizeof(magic), &pos,
+					file_size))
 				goto clean;
 			if (magic == 0x06054b50) {
 				eocd_offset = pos - sizeof(magic);
@@ -196,7 +204,8 @@ static __always_inline bool check_v2_signature(char *path,
 	// reject ZIP64 before looking for a signing block
 	if (eocd_offset >= 20) {
 		pos = eocd_offset - 20;
-		if (!read_exact(fp, &zip64_locator_magic, sizeof(zip64_locator_magic), &pos, file_size))
+		if (!read_exact(fp, &zip64_locator_magic,
+				sizeof(zip64_locator_magic), &pos, file_size))
 			goto clean;
 		if (zip64_locator_magic == 0x07064b50)
 			goto clean;
@@ -209,7 +218,8 @@ static __always_inline bool check_v2_signature(char *path,
 	// offset of central directory
 	if (!read_exact(fp, &cd_offset, sizeof(cd_offset), &pos, file_size))
 		goto clean;
-	if ((u64)cd_offset > (u64)eocd_offset || (u64)cd_size != (u64)eocd_offset - cd_offset)
+	if ((u64)cd_offset > (u64)eocd_offset ||
+	    (u64)cd_size != (u64)eocd_offset - cd_offset)
 		goto clean;
 	if (cd_offset < 0x20)
 		goto clean;
@@ -217,18 +227,21 @@ static __always_inline bool check_v2_signature(char *path,
 	pairs_end = (loff_t)cd_offset - 0x18;
 	pos = pairs_end;
 
-	if (!read_exact(fp, &size_of_block, sizeof(size_of_block), &pos, cd_offset))
+	if (!read_exact(fp, &size_of_block, sizeof(size_of_block), &pos,
+			cd_offset))
 		goto clean;
 	if (!read_exact(fp, buffer, sizeof(buffer), &pos, cd_offset))
 		goto clean;
 	if (memcmp((char *)buffer, "APK Sig Block 42", sizeof(buffer)))
 		goto clean;
 
-	if (size_of_block < 0x18 || size_of_block > INT_MAX - 0x8 || size_of_block > (u64)cd_offset - 0x8)
+	if (size_of_block < 0x18 || size_of_block > INT_MAX - 0x8 ||
+	    size_of_block > (u64)cd_offset - 0x8)
 		goto clean;
 
 	pos = (loff_t)cd_offset - (loff_t)size_of_block - 0x8;
-	if (!read_exact(fp, &size_of_block_at_head, sizeof(size_of_block_at_head), &pos, pairs_end))
+	if (!read_exact(fp, &size_of_block_at_head,
+			sizeof(size_of_block_at_head), &pos, pairs_end))
 		goto clean;
 	if (size_of_block_at_head != size_of_block)
 		goto clean;
@@ -241,9 +254,11 @@ static __always_inline bool check_v2_signature(char *path,
 		u64 size_of_pair;
 		loff_t pair_end;
 
-		if (!read_exact(fp, &size_of_pair, sizeof(size_of_pair), &pos, pairs_end))
+		if (!read_exact(fp, &size_of_pair, sizeof(size_of_pair), &pos,
+				pairs_end))
 			goto invalid;
-		if (size_of_pair < sizeof(id) || size_of_pair > INT_MAX || size_of_pair > (u64)(pairs_end - pos))
+		if (size_of_pair < sizeof(id) || size_of_pair > INT_MAX ||
+		    size_of_pair > (u64)(pairs_end - pos))
 			goto invalid;
 
 		pair_end = pos + (loff_t)size_of_pair;
@@ -252,7 +267,9 @@ static __always_inline bool check_v2_signature(char *path,
 
 		if (id == 0x7109871au) {
 			v2_signing_blocks++;
-			v2_signing_valid = check_block(fp, &pos, pair_end, expected_size, expected_sha256);
+			v2_signing_valid =
+				check_block(fp, &pos, pair_end, expected_size,
+					    expected_sha256);
 		} else if (id != 0x42726577u) { // APK verity padding
 			// https://cs.android.com/android/platform/superproject/+/android-latest-release:tools/apksig/src/main/java/com/android/apksig/internal/apk/ApkSigningBlockUtils.java;l=102;drc=ebe4dfd4fd6550c949a6c7c2427484bf5e96500b
 #ifdef CONFIG_KSU_DEBUG
@@ -265,7 +282,8 @@ static __always_inline bool check_v2_signature(char *path,
 
 	if (v2_signing_blocks != 1) {
 #ifdef CONFIG_KSU_DEBUG
-		pr_err("Unexpected v2 signature count: %d\n", v2_signing_blocks);
+		pr_err("Unexpected v2 signature count: %d\n",
+		       v2_signing_blocks);
 #endif
 		v2_signing_valid = false;
 	}
@@ -300,7 +318,7 @@ static struct kernel_param_ops expected_size_ops = {
 };
 
 module_param_cb(ksu_debug_manager_appid, &expected_size_ops,
-                &ksu_debug_manager_appid, S_IRUSR | S_IWUSR);
+		&ksu_debug_manager_appid, S_IRUSR | S_IWUSR);
 
 #endif
 
@@ -357,5 +375,6 @@ bool is_manager_apk(char *path)
 		return false;
 	}
 #endif
-	return check_v2_signature(path, EXPECTED_MANAGER_SIZE, EXPECTED_MANAGER_HASH);
+	return check_v2_signature(path, EXPECTED_MANAGER_SIZE,
+				  EXPECTED_MANAGER_HASH);
 }
