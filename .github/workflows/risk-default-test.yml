@@ -3,7 +3,7 @@ name: ksud risk scanning opt-in regression
 on:
   workflow_dispatch:
   push:
-    branches: [rom-policy-view-experiment]
+    branches: [dev]
     paths:
       - 'userspace/ksud/src/risk.rs'
       - 'userspace/ksud/src/module.rs'

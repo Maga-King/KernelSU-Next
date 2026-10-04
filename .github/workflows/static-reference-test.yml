@@ -3,7 +3,7 @@ name: Experimental static SELinux reference compile test
 on:
   workflow_dispatch:
   push:
-    branches: [rom-policy-view-experiment]
+    branches: [dev]
     paths:
       - 'kernel/**'
       - 'scripts/embed_static_reference.py'
