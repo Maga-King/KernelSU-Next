@@ -1,0 +1,26 @@
+name: ksud risk scanning opt-in regression
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [rom-policy-view-experiment]
+    paths:
+      - 'userspace/ksud/src/risk.rs'
+      - 'userspace/ksud/src/module.rs'
+      - 'userspace/ksud/src/module_config.rs'
+      - 'scripts/tests/test_risk_default.py'
+      - '.github/workflows/risk-default-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  defaults:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Require Rust compiler for runtime tests
+        run: rustc --version
+      - name: Test actual risk config getter and installation guard
+        run: python3 -m unittest discover -s scripts/tests -p test_risk_default.py -v

@@ -7,7 +7,7 @@ on:
     paths:
       - 'kernel/**'
       - 'scripts/embed_static_reference.py'
-      - 'scripts/tests/**'
+      - 'scripts/tests/test_static_reference.py'
       - '.github/workflows/static-reference-test.yml'
 
 permissions:

@@ -267,7 +267,9 @@ pub fn is_risk_detection_enabled() -> bool {
         crate::module_config::ConfigType::Persist,
     ) {
         Ok(Some(value)) => crate::module_config::parse_bool_config(&value),
-        Ok(None) | Err(_) => true,
+        // Opt in to install-time scanning; the remote catalog fetch may block
+        // module installation when GitHub is unreachable.
+        Ok(None) | Err(_) => false,
     }
 }
 
