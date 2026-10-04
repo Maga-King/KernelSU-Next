@@ -4,3 +4,6 @@ CLAUDE.md
 AGENTS.md
 .DS_Store
 /userspace/ksud/.lkm_image_bootstrap.o
+/kernel/feature/static_reference_blob.h
+/scripts/__pycache__/
+/scripts/tests/__pycache__/

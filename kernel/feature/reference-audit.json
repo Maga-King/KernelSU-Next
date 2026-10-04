@@ -1,0 +1,185 @@
+{
+  "file": "reference-v30.policy",
+  "policy_version": 30,
+  "sha256": "954080162a620cb6273a5f583d36db9bb3ada65a3ea0abfd2eba5bc8d5dc5849",
+  "bytes": 2278330,
+  "strict_compile_without_N": true,
+  "binary_readback": true,
+  "binary_roundtrip": true,
+  "native_libsepol_probe": {
+    "abi_match": true,
+    "policy_version": 30,
+    "classes": 108,
+    "contexts": [
+      {
+        "id": 0,
+        "context": "u:r:adbroot:s0",
+        "valid": false
+      },
+      {
+        "id": 1,
+        "context": "u:r:magisk:s0",
+        "valid": false
+      },
+      {
+        "id": 2,
+        "context": "u:object_r:magisk_file:s0",
+        "valid": false
+      },
+      {
+        "id": 3,
+        "context": "u:r:ksu:s0",
+        "valid": false
+      },
+      {
+        "id": 4,
+        "context": "u:object_r:ksu_file:s0",
+        "valid": false
+      },
+      {
+        "id": 5,
+        "context": "u:object_r:lsposed_file:s0",
+        "valid": false
+      },
+      {
+        "id": 6,
+        "context": "u:object_r:xposed_data:s0",
+        "valid": false
+      },
+      {
+        "id": 7,
+        "context": "u:object_r:xposed_file:s0",
+        "valid": false
+      },
+      {
+        "id": 8,
+        "context": "u:object_r:magisk_log_file:s0",
+        "valid": false
+      },
+      {
+        "id": 9,
+        "context": "u:r:magisk_file:s0",
+        "valid": false
+      },
+      {
+        "id": 10,
+        "context": "u:r:ksu_file:s0",
+        "valid": false
+      },
+      {
+        "id": 11,
+        "context": "u:r:lsposed_file:s0",
+        "valid": false
+      },
+      {
+        "id": 12,
+        "context": "u:r:xposed_data:s0",
+        "valid": false
+      }
+    ],
+    "access": [
+      {
+        "id": 0,
+        "status": "kernel_class0_model",
+        "allowed": false,
+        "mask": 0,
+        "requested": 0
+      },
+      {
+        "id": 1,
+        "status": "computed",
+        "allowed": true,
+        "mask": 50335744,
+        "requested": 16777216
+      },
+      {
+        "id": 2,
+        "status": "computed",
+        "allowed": true,
+        "mask": 9,
+        "requested": 8
+      },
+      {
+        "id": 3,
+        "status": "computed",
+        "allowed": false,
+        "mask": 266304,
+        "requested": 33554432
+      },
+      {
+        "id": 4,
+        "status": "computed",
+        "allowed": false,
+        "mask": 65536,
+        "requested": 2
+      },
+      {
+        "id": 5,
+        "status": "computed",
+        "allowed": false,
+        "mask": 0,
+        "requested": 64
+      },
+      {
+        "id": 6,
+        "status": "computed",
+        "allowed": false,
+        "mask": 0,
+        "requested": 262144
+      },
+      {
+        "id": 7,
+        "status": "computed",
+        "allowed": false,
+        "mask": 0,
+        "requested": 2
+      },
+      {
+        "id": 8,
+        "status": "computed",
+        "allowed": false,
+        "mask": 0,
+        "requested": 16384
+      },
+      {
+        "id": 9,
+        "status": "computed",
+        "allowed": false,
+        "mask": 0,
+        "requested": 33554432
+      },
+      {
+        "id": 10,
+        "status": "computed",
+        "allowed": false,
+        "mask": 0,
+        "requested": 268435456
+      },
+      {
+        "id": 11,
+        "status": "computed",
+        "allowed": false,
+        "mask": 0,
+        "requested": 4
+      },
+      {
+        "id": 12,
+        "status": "computed",
+        "allowed": false,
+        "mask": 16384,
+        "requested": 4
+      },
+      {
+        "id": 13,
+        "status": "computed",
+        "allowed": false,
+        "mask": 0,
+        "requested": 4
+      }
+    ]
+  },
+  "neverallow_conflicting_grants_removed": 16614,
+  "runtime_policy_sha256_unchanged": true,
+  "scope": "query reference only, never enforcement; no ROM writes or reboot",
+  "class0_note": "Modeled from kernel source, not native kernel channel test"
+}

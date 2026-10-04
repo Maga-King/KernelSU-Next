@@ -18,6 +18,19 @@ config KSU_DEBUG
 	help
 	  Enable KernelSU debug mode.
 
+config KSU_STATIC_SELINUX_REFERENCE
+	bool "Experimental fixed SELinux query reference"
+	depends on KSU
+	default n
+	help
+	  Use the bundled fixed policy ONLY for SELinux Hide application queries.
+	  The active enforcement policy is NOT changed. This does not reduce
+	  any real permissions and is not a security-hardening feature.
+	  Requires the normal selinux_hide feature to be enabled at runtime.
+	  A policy/class/permission ABI mismatch falls back to upstream behavior.
+	  Unknown contexts can change application query decisions. Do not claim
+	  universal ROM compatibility or undetectability.
+
 config KSU_DISABLE_MANAGER
 	bool "Disable KernelSU manager integration"
 	depends on KSU

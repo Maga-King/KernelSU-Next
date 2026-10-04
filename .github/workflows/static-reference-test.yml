@@ -1,0 +1,51 @@
+name: Experimental static SELinux reference compile test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [rom-policy-view-experiment]
+    paths:
+      - 'kernel/**'
+      - 'scripts/embed_static_reference.py'
+      - 'scripts/tests/**'
+      - '.github/workflows/static-reference-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  arm64-6-6:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        reference: ['n', 'y']
+    container:
+      image: ghcr.io/ylarod/ddk-min:android15-6.6-20260828
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+      - name: Reference generator tests
+        run: python3 -m unittest discover -s scripts/tests -v
+      - name: Compile experimental feature and upstream fallback
+        env:
+          REFERENCE_ENABLED: ${{ matrix.reference }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          cd kernel
+          CONFIG_KSU=m CONFIG_KSU_STATIC_SELINUX_REFERENCE="$REFERENCE_ENABLED" CC=clang make 2>&1 | tee "$GITHUB_WORKSPACE/compile.log"
+          mkdir -p "$GITHUB_WORKSPACE/test-artifact"
+          cp kernelsu.ko "$GITHUB_WORKSPACE/test-artifact/compile-test-only-android15-6.6-ref-$REFERENCE_ENABLED.ko"
+          cp feature/reference.policy "$GITHUB_WORKSPACE/test-artifact/QUERY-ONLY-NOT-FOR-FLASHING.policy"
+          sha256sum feature/reference.policy > "$GITHUB_WORKSPACE/test-artifact/reference.sha256"
+      - name: Upload compile result
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: compile-test-only-6.6-static-reference-${{ matrix.reference }}
+          path: |
+            compile.log
+            test-artifact/
