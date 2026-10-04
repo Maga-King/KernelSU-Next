@@ -4,6 +4,10 @@ on:
   push:
     branches: [ "dev" ]
     paths:
+      - '.github/workflows/build-manager-ci.yml'
+      - 'scripts/prepare_manager_signing.py'
+      - 'scripts/verify_manager_apk.py'
+      - 'scripts/tests/test_manager_signing.py'
       - '.github/workflows/build-manager.yml'
       - '.github/workflows/build-lkm.yml'
       - '.github/workflows/ksud.yml'
@@ -13,6 +17,10 @@ on:
   pull_request:
     branches: [ "dev" ]
     paths:
+      - '.github/workflows/build-manager-ci.yml'
+      - 'scripts/prepare_manager_signing.py'
+      - 'scripts/verify_manager_apk.py'
+      - 'scripts/tests/test_manager_signing.py'
       - '.github/workflows/build-manager.yml'
       - '.github/workflows/build-lkm.yml'
       - '.github/workflows/ksud.yml'
@@ -98,23 +106,20 @@ jobs:
             echo "UPLOAD=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Write key
-        run: |
-          if [ ! -z "${{ secrets.KEYSTORE }}" ]; then
-            {
-              echo KEYSTORE_PASSWORD='${{ secrets.KEYSTORE_PASSWORD }}'
-              echo KEY_ALIAS='${{ secrets.KEY_ALIAS }}'
-              echo KEY_PASSWORD='${{ secrets.KEY_PASSWORD }}'
-              echo KEYSTORE_FILE='key.jks'
-            } >> gradle.properties
-            echo ${{ secrets.KEYSTORE }} | base64 -d > key.jks
-          fi
-
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
+
+      - name: Configure pinned fork release signing
+        if: github.event_name != 'pull_request'
+        env:
+          FORK_MANAGER_KEYSTORE: ${{ secrets.FORK_MANAGER_KEYSTORE }}
+          FORK_MANAGER_STORE_PASSWORD: ${{ secrets.FORK_MANAGER_STORE_PASSWORD }}
+          FORK_MANAGER_KEY_ALIAS: ${{ secrets.FORK_MANAGER_KEY_ALIAS }}
+          FORK_MANAGER_KEY_PASSWORD: ${{ secrets.FORK_MANAGER_KEY_PASSWORD }}
+        run: python3 ../scripts/prepare_manager_signing.py
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
@@ -148,6 +153,10 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew clean assembleRelease
+
+      - name: Verify release APK signature and kernel certificate pin
+        if: github.event_name != 'pull_request'
+        run: python3 ../scripts/verify_manager_apk.py app/build/outputs/apk/release/*.apk
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7

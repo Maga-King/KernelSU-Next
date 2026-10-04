@@ -8,6 +8,10 @@ on:
       - 'kernel/**'
       - 'scripts/embed_static_reference.py'
       - 'scripts/tests/test_static_reference.py'
+      - 'scripts/tests/test_manager_signing.py'
+      - 'scripts/prepare_manager_signing.py'
+      - 'scripts/verify_manager_apk.py'
+      - 'manager/signing-certificate.json'
       - '.github/workflows/static-reference-test.yml'
 
 permissions:

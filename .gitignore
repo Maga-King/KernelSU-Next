@@ -7,3 +7,4 @@ AGENTS.md
 /kernel/feature/static_reference_blob.h
 /scripts/__pycache__/
 /scripts/tests/__pycache__/
+/manager/key.jks

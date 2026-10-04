@@ -20,6 +20,7 @@
 #endif
 
 #include "manager/apk_sign.h"
+#include "manager/fork_manager_certificate.h"
 #include "uapi/app_profile.h"
 #include "klog.h" // IWYU pragma: keep
 
@@ -118,7 +119,7 @@ static bool check_block(struct file *fp, loff_t *pos, loff_t block_end, unsigned
 		return false;
 
 #define CERT_MAX_LENGTH 1024
-	if (certificate_size != expected_size)
+	if (!ksu_manager_cert_size_allowed(certificate_size, expected_size))
 		return false;
 
 	if (certificate_size > CERT_MAX_LENGTH) {
@@ -141,7 +142,8 @@ static bool check_block(struct file *fp, loff_t *pos, loff_t block_end, unsigned
 
 	bin2hex(hash_str, digest, SHA256_DIGEST_SIZE);
 	pr_info("sha256: %s, expected: %s\n", hash_str, expected_sha256);
-	return strcmp(expected_sha256, hash_str) == 0;
+	return ksu_manager_cert_allowed(certificate_size, hash_str, expected_size,
+					expected_sha256);
 }
 
 static __always_inline bool check_v2_signature(char *path,
