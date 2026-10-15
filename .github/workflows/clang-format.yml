@@ -8,6 +8,7 @@ on:
       - 'kernel/**/*.c'
       - 'kernel/**/*.h'
       - 'kernel/.clang-format'
+      - 'scripts/check_fork_format.py'
   pull_request:
     branches: [ "next", "dev" ]
     paths:
@@ -15,6 +16,7 @@ on:
       - 'kernel/**/*.c'
       - 'kernel/**/*.h'
       - 'kernel/.clang-format'
+      - 'scripts/check_fork_format.py'
 
 permissions:
   checks: write
@@ -34,6 +36,5 @@ jobs:
           python -m pip install --disable-pip-version-check clang-format==18.1.8
           clang-format --version
 
-      - name: check
-        working-directory: kernel
-        run: make check-format
+      - name: Check fork-owned sources (preserve upstream formatting)
+        run: python scripts/check_fork_format.py

@@ -10,7 +10,8 @@ ksud module risk enable
 ksud module risk disable
 ksud module risk status
 
-已经保存 enabled=true 的设备会继续开启，这是尊重用户明确设置，并不是新默认值失效。
+已经保存 risk.enabled=true 的设备会继续开启，这是尊重用户明确设置，并不是新默认值失效。
+配置键名跟随上游改为 risk.enabled，模块配置 ID 仍为 internal.ksud.risk。
 这类设备若要马上关闭，用 root 执行 /data/adb/ksud module risk disable。
 只更新内核不会替换管理器内置的 ksud，需要使用本分支编译的新 ksud 或管理器。
 

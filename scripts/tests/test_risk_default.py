@@ -1,4 +1,5 @@
 """Compile and exercise the actual config getter, without touching /data/adb."""
+import re
 import shutil
 import subprocess
 import tempfile
@@ -25,8 +26,7 @@ class RiskDefaultTests(unittest.TestCase):
         risk = (ROOT / 'userspace/ksud/src/risk.rs').read_text(encoding='utf8')
         config = (ROOT / 'userspace/ksud/src/module_config.rs').read_text(encoding='utf8')
         harness = '''
-const RISK_CONFIG_MODULE_ID: &str = "internal.ksud.risk";
-const RISK_CONFIG_KEY: &str = "enabled";
+__RISK_CONFIG_CONSTANTS__
 mod module_config {
     use std::cell::RefCell;
     type Value = Result<Option<String>, &'static str>;
@@ -34,7 +34,7 @@ mod module_config {
     pub enum ConfigType { Persist }
     pub fn get_config_value(id: &str, key: &str, _: ConfigType) -> Value {
         assert_eq!(id, "internal.ksud.risk");
-        assert_eq!(key, "enabled");
+        assert_eq!(key, "risk.enabled");
         CONFIG.with(|value| value.borrow().clone())
     }
     pub fn set(value: Value) { CONFIG.with(|slot| *slot.borrow_mut() = value); }
@@ -60,6 +60,9 @@ fn explicit_enable_and_disable_are_preserved() {
     }
 }
 '''
+        constants = re.findall(r'^const RISK_CONFIG_(?:MODULE_ID|KEY):[^\n]+', risk, re.M)
+        self.assertEqual(len(constants), 2)
+        harness = harness.replace('__RISK_CONFIG_CONSTANTS__', '\n'.join(constants))
         harness = harness.replace('__PARSE_BOOL__', function(config, 'parse_bool_config'))
         harness = harness.replace('__GET_RISK__', function(risk, 'is_risk_detection_enabled'))
         with tempfile.TemporaryDirectory() as temp:

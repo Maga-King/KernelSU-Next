@@ -23,6 +23,8 @@
 #include "hook/syscall_hook.h"
 #include "feature/adb_root.h"
 #include "feature/selinux_hide.h"
+#include "feature/module_blacklist.h"
+#include "feature/shell_su_adb_only.h"
 #include "feature/sulog.h"
 #include "infra/symbol_resolver.h"
 
@@ -41,30 +43,30 @@
 // while those third-party kernel can't provide.
 // Thus, we manually provide it instead of using kernel's
 #if defined(CONFIG_STACKPROTECTOR) &&                                          \
-	(defined(CONFIG_ARM64) && defined(MODULE) &&                           \
-	 !defined(CONFIG_STACKPROTECTOR_PER_TASK))
+    (defined(CONFIG_ARM64) && defined(MODULE) &&                               \
+     !defined(CONFIG_STACKPROTECTOR_PER_TASK))
 #include <linux/stackprotector.h>
 #include <linux/random.h>
 unsigned long __stack_chk_guard __ro_after_init
-	__attribute__((visibility("hidden")));
+    __attribute__((visibility("hidden")));
 
 __attribute__((no_stack_protector)) void __init ksu_setup_stack_chk_guard()
 {
-	unsigned long canary;
+    unsigned long canary;
 
-	/* Try to get a semi random initial value. */
-	get_random_bytes(&canary, sizeof(canary));
-	canary ^= LINUX_VERSION_CODE;
-	canary &= CANARY_MASK;
-	__stack_chk_guard = canary;
+    /* Try to get a semi random initial value. */
+    get_random_bytes(&canary, sizeof(canary));
+    canary ^= LINUX_VERSION_CODE;
+    canary &= CANARY_MASK;
+    __stack_chk_guard = canary;
 }
 
 __attribute__((naked)) int __init kernelsu_init_early(void)
 {
-	asm("mov x19, x30;\n"
-	    "bl ksu_setup_stack_chk_guard;\n"
-	    "mov x30, x19;\n"
-	    "b kernelsu_init;\n");
+    asm("mov x19, x30;\n"
+        "bl ksu_setup_stack_chk_guard;\n"
+        "mov x30, x19;\n"
+        "b kernelsu_init;\n");
 }
 #define NEED_OWN_STACKPROTECTOR 1
 #else
@@ -91,29 +93,25 @@ module_param_named(bundled, ksu_bundled, bool, 0);
 
 int __init kernelsu_init(void)
 {
+#ifdef KSU_MANAGER_PACKAGE
+	pr_info("welcome to KernelSU version " __stringify(KERNEL_SU_VERSION) ", package name " KSU_MANAGER_PACKAGE "\n");
+#else
+	pr_info("welcome to KernelSU version " __stringify(KERNEL_SU_VERSION) "\n");
+#endif
 #if defined(__x86_64__) && !defined(CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER)
-	// If the kernel has the hardening patch, X86_FEATURE_INDIRECT_SAFE must be set
-	if (!boot_cpu_has(X86_FEATURE_INDIRECT_SAFE)) {
-		pr_alert(
-			"*************************************************************");
-		pr_alert(
-			"**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
-		pr_alert(
-			"**                                                         **");
-		pr_alert(
-			"**        X86_FEATURE_INDIRECT_SAFE is not enabled!        **");
-		pr_alert(
-			"**      KernelSU will abort initialization to prevent      **");
-		pr_alert(
-			"**                     kernel panic.                       **");
-		pr_alert(
-			"**                                                         **");
-		pr_alert(
-			"**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
-		pr_alert(
-			"*************************************************************");
-		return -ENOSYS;
-	}
+    // If the kernel has the hardening patch, X86_FEATURE_INDIRECT_SAFE must be set
+    if (!boot_cpu_has(X86_FEATURE_INDIRECT_SAFE)) {
+        pr_alert("*************************************************************");
+        pr_alert("**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
+        pr_alert("**                                                         **");
+        pr_alert("**        X86_FEATURE_INDIRECT_SAFE is not enabled!        **");
+        pr_alert("**      KernelSU will abort initialization to prevent      **");
+        pr_alert("**                     kernel panic.                       **");
+        pr_alert("**                                                         **");
+        pr_alert("**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
+        pr_alert("*************************************************************");
+        return -ENOSYS;
+    }
 #endif
 
 #ifdef MODULE
@@ -123,20 +121,13 @@ int __init kernelsu_init(void)
 #endif
 
 #ifdef CONFIG_KSU_DEBUG
-	pr_alert(
-		"*************************************************************");
-	pr_alert(
-		"**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
-	pr_alert(
-		"**                                                         **");
-	pr_alert(
-		"**         You are running KernelSU in DEBUG mode          **");
-	pr_alert(
-		"**                                                         **");
-	pr_alert(
-		"**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
-	pr_alert(
-		"*************************************************************");
+	pr_alert("*************************************************************");
+	pr_alert("**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
+	pr_alert("**                                                         **");
+	pr_alert("**         You are running KernelSU in DEBUG mode          **");
+	pr_alert("**                                                         **");
+	pr_alert("**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
+	pr_alert("*************************************************************");
 #endif
 	if (allow_shell) {
 		pr_alert("shell is allowed at init!");
@@ -151,11 +142,15 @@ int __init kernelsu_init(void)
 	ksu_init_symbol_resolver();
 	ksu_syscall_hook_init();
 
+	// Block modules early, before vendor modules are loaded in second stage.
+	ksu_module_blacklist_init();
+
 	ksu_feature_init();
 	ksu_sulog_init();
 	ksu_adb_root_init();
 	ksu_lsm_hook_init();
 	ksu_selinux_hide_init();
+	ksu_shell_su_adb_only_init();
 
 	ksu_supercalls_init();
 	ksu_app_profile_init();
@@ -183,6 +178,8 @@ int __init kernelsu_init(void)
 
 		ksu_boot_completed = true;
 		track_throne(false);
+
+		ksu_feature_apply_forced();
 
 		if (!getenforce()) {
 			pr_info("Permissive SELinux, enforcing\n");
@@ -229,15 +226,13 @@ void __exit kernelsu_exit(void)
 
 	ksu_allowlist_exit();
 
+	ksu_shell_su_adb_only_exit();
 	ksu_selinux_hide_exit();
-
 	ksu_lsm_hook_exit();
-
 	ksu_adb_root_exit();
-
 	ksu_sulog_exit();
-
 	ksu_feature_exit();
+	ksu_module_blacklist_exit();
 
 	put_cred(ksu_cred);
 }
