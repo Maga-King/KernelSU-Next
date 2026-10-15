@@ -5,7 +5,7 @@
 <div align="center">
   <img src="/assets/kernelsu_next.png" width="96" alt="KernelSU Next Logo">
 
-  <h2>KernelSU Next</h2>
+  <h2>该仓库是给一加8e移植OriginOS做的 别下 Dont download it</h2>
   <p><strong>A kernel-based root solution for Android devices.</strong></p>
 
   <p>
