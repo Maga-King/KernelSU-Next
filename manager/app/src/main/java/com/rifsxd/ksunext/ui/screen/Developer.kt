@@ -15,8 +15,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import com.rifsxd.ksunext.ui.LocalNavBarEnabled
 import com.rifsxd.ksunext.ui.LocalScrollState
 import com.rifsxd.ksunext.ui.rememberScrollConnection
 import androidx.compose.ui.res.stringResource
@@ -30,7 +28,6 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
 import com.rifsxd.ksunext.Natives
 import com.rifsxd.ksunext.R
-import com.rifsxd.ksunext.ksuApp
 import com.rifsxd.ksunext.ui.component.SwitchItem
 import com.rifsxd.ksunext.ui.util.*
 
@@ -58,10 +55,8 @@ fun DeveloperScreen(navigator: DestinationsNavigator) {
     val isManager = Natives.isManager
     val ksuVersion = if (isManager) Natives.version else null
 
-    val scrollState = LocalScrollState.current
-    val navBarEnabled = LocalNavBarEnabled.current
-    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+
+    val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
 
     Scaffold(
         topBar = {
@@ -87,6 +82,7 @@ fun DeveloperScreen(navigator: DestinationsNavigator) {
                     }
                 }
                 .verticalScroll(rememberScrollState())
+                .padding(bottom = navBarPadding)
         ) {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()

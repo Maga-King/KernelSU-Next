@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">Добро утро</string>
+    <string name="aster_home_afternoon">Добър ден</string>
+    <string name="aster_home_evening">Добър вечер</string>
+    <string name="aster_home_appearance">Изглед на началния екран</string>
+    <string name="aster_home_choose_wallpaper">Избор на тапет</string>
+    <string name="aster_home_clear_wallpaper">Премахване на тапета</string>
+    <string name="aster_home_wallpaper_error">Тапетът не може да бъде обновен. Изберете изображение, което може да бъде прочетено и е по-малко от 24 MB.</string>
+    <string name="aster_search">Търсене</string>
+    <string name="aster_clear_search">Изчистване на търсенето</string>
+    <string name="aster_back">Назад</string>
+    <string name="aster_kernel_features">Функции на ядрото</string>
+    <string name="aster_security">Сигурност</string>
+    <string name="aster_app_settings">Настройки на приложението</string>
+    <string name="aster_panorama">Панорамен изглед</string>
+    <string name="aster_panorama_summary">Странична навигация и начален екран с поддръжка на тапет. Изключете за стандартния изглед с долна навигация.</string>
+    <string name="aster_navigation_unavailable">Тази страница изисква активна инсталация на KernelSU с пълна функционалност. Проверете състоянието на началния екран.</string>
+    <string name="aster_mode_limited">Ограничен режим</string>
+    <string name="aster_navigation">Показване на навигацията</string>
+    <string name="aster_navigation_summary">Показва страничната или долната лента за навигация според избрания изглед.</string>
+</resources>

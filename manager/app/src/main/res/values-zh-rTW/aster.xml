@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">早安</string>
+    <string name="aster_home_afternoon">午安</string>
+    <string name="aster_home_evening">晚安</string>
+    <string name="aster_home_appearance">首頁外觀</string>
+    <string name="aster_home_choose_wallpaper">選擇桌布</string>
+    <string name="aster_home_clear_wallpaper">移除桌布</string>
+    <string name="aster_home_wallpaper_error">無法更新桌布，請選擇小於 24 MB 且可讀取的圖片。</string>
+    <string name="aster_search">搜尋</string>
+    <string name="aster_clear_search">清除搜尋</string>
+    <string name="aster_back">返回</string>
+    <string name="aster_kernel_features">核心功能</string>
+    <string name="aster_security">安全性</string>
+    <string name="aster_app_settings">應用程式設定</string>
+    <string name="aster_panorama">全景版面</string>
+    <string name="aster_panorama_summary">使用側邊導覽列與可設定桌布的首頁。關閉後將使用標準的底部導覽版面。</string>
+    <string name="aster_navigation_unavailable">此頁面需要已啟用且支援完整功能的 KernelSU。請前往首頁確認狀態。</string>
+    <string name="aster_mode_limited">受限模式</string>
+    <string name="aster_navigation">顯示導覽列</string>
+    <string name="aster_navigation_summary">依照所選版面顯示側邊或底部導覽列。</string>
+</resources>

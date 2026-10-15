@@ -10,27 +10,24 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import com.rifsxd.ksunext.ui.LocalNavBarEnabled
 import com.rifsxd.ksunext.ui.LocalScrollState
 import com.rifsxd.ksunext.ui.rememberScrollConnection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -55,7 +52,7 @@ import kotlinx.coroutines.launch
 fun SuperUserScreen(navigator: DestinationsNavigator) {
     val viewModel = viewModel<SuperUserViewModel>()
     val scope = rememberCoroutineScope()
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val listState = rememberLazyListState()
     // Bottom bar scroll tracking
     val bottomBarScrollState = LocalScrollState.current
@@ -78,11 +75,12 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
     Scaffold(
         topBar = {
             SearchAppBar(
+                largeTitle = true,
                 title = {
                     Text(
                         text = stringResource(R.string.superuser),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 searchText = viewModel.search,
@@ -148,10 +146,9 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
             },
             isRefreshing = viewModel.isRefreshing
         ) {
-            val scrollState = LocalScrollState.current
-            val navBarEnabled = LocalNavBarEnabled.current
-            val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
-            val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+
+
+            val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
 
             LazyColumn(
                 state = listState,
@@ -166,7 +163,7 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
                             modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
                         }
                     },
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     top = 16.dp,
@@ -198,13 +195,16 @@ private fun AppItem(
     val developerOptionsEnabled = prefs.getBoolean("enable_developer_options", false)
 
     Card(
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
+            .clip(RoundedCornerShape(28.dp))
             .clickable(onClick = onClickListener)
     ) {
         ListItem(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             headlineContent = {
                 Text(

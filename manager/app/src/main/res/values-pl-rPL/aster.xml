@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">Dzień dobry</string>
+    <string name="aster_home_afternoon">Miłego popołudnia</string>
+    <string name="aster_home_evening">Dobry wieczór</string>
+    <string name="aster_home_appearance">Wygląd ekranu głównego</string>
+    <string name="aster_home_choose_wallpaper">Wybierz tapetę</string>
+    <string name="aster_home_clear_wallpaper">Usuń tapetę</string>
+    <string name="aster_home_wallpaper_error">Nie udało się zmienić tapety. Wybierz obraz, który można odczytać i który ma mniej niż 24 MB.</string>
+    <string name="aster_search">Szukaj</string>
+    <string name="aster_clear_search">Wyczyść wyszukiwanie</string>
+    <string name="aster_back">Wstecz</string>
+    <string name="aster_kernel_features">Funkcje jądra</string>
+    <string name="aster_security">Bezpieczeństwo</string>
+    <string name="aster_app_settings">Ustawienia aplikacji</string>
+    <string name="aster_panorama">Układ panoramiczny</string>
+    <string name="aster_panorama_summary">Nawigacja boczna i ekran główny z możliwością ustawienia tapety. Wyłącz, aby używać standardowego układu z nawigacją na dole.</string>
+    <string name="aster_navigation_unavailable">Ta strona wymaga aktywnej instalacji KernelSU z pełną obsługą funkcji. Sprawdź stan na ekranie głównym.</string>
+    <string name="aster_mode_limited">Tryb ograniczony</string>
+    <string name="aster_navigation">Pokaż nawigację</string>
+    <string name="aster_navigation_summary">Wyświetl boczny lub dolny pasek nawigacji zgodnie z wybranym układem.</string>
+</resources>

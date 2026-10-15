@@ -2,6 +2,7 @@ package com.rifsxd.ksunext.ui.component
 
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -12,6 +13,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemColors
 import com.dergoogler.mmrl.ui.component.LabelItem
@@ -42,7 +44,7 @@ fun SwitchItem(
                 enabled = enabled,
                 indication = LocalIndication.current,
                 onValueChange = onCheckedChange
-            )),
+            )).padding(vertical = 4.dp),
         colors = colors,
         headlineContent = {
             TextRow(
@@ -59,7 +61,7 @@ fun SwitchItem(
                     modifier = Modifier.then(stateAlpha),
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Medium
                 )
             }
         },

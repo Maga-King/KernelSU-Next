@@ -12,7 +12,25 @@ val Typography = androidx.compose.material3.Typography(
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
+        letterSpacing = 0.sp
+    ),
+    headlineLarge = TextStyle(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 32.sp,
+        lineHeight = 38.sp,
+        letterSpacing = (-0.8).sp
+    ),
+    titleLarge = TextStyle(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+        letterSpacing = (-0.3).sp
+    ),
+    titleMedium = TextStyle(
+        fontWeight = FontWeight.Medium,
+        fontSize = 16.sp,
+        lineHeight = 22.sp,
+        letterSpacing = 0.sp
     )
     /* Other default text styles to override
     titleLarge = TextStyle(

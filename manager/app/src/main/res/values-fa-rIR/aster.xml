@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">صبح بخیر</string>
+    <string name="aster_home_afternoon">عصر بخیر</string>
+    <string name="aster_home_evening">شب بخیر</string>
+    <string name="aster_home_appearance">ظاهر صفحهٔ اصلی</string>
+    <string name="aster_home_choose_wallpaper">انتخاب تصویر زمینه</string>
+    <string name="aster_home_clear_wallpaper">حذف تصویر زمینه</string>
+    <string name="aster_home_wallpaper_error">تصویر زمینه به‌روزرسانی نشد. تصویری قابل خواندن با حجم کمتر از ۲۴ مگابایت انتخاب کنید.</string>
+    <string name="aster_search">جستجو</string>
+    <string name="aster_clear_search">پاک کردن جستجو</string>
+    <string name="aster_back">بازگشت</string>
+    <string name="aster_kernel_features">قابلیت‌های هسته</string>
+    <string name="aster_security">امنیت</string>
+    <string name="aster_app_settings">تنظیمات برنامه</string>
+    <string name="aster_panorama">چیدمان پانوراما</string>
+    <string name="aster_panorama_summary">ناوبری کناری و صفحهٔ اصلی با پشتیبانی از تصویر زمینه. برای استفاده از چیدمان استاندارد با ناوبری پایین، این گزینه را خاموش کنید.</string>
+    <string name="aster_navigation_unavailable">این صفحه به نصب فعال KernelSU با همهٔ قابلیت‌ها نیاز دارد. وضعیت را در صفحهٔ اصلی بررسی کنید.</string>
+    <string name="aster_mode_limited">حالت محدود</string>
+    <string name="aster_navigation">نمایش ناوبری</string>
+    <string name="aster_navigation_summary">نوار ناوبری کناری یا پایینی را متناسب با چیدمان انتخاب‌شده نمایش می‌دهد.</string>
+</resources>

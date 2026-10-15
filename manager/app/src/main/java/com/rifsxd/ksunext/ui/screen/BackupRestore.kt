@@ -23,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.dropUnlessResumed
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -31,7 +30,6 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
 import com.rifsxd.ksunext.R
 import com.rifsxd.ksunext.ksuApp
-import com.rifsxd.ksunext.ui.LocalNavBarEnabled
 import com.rifsxd.ksunext.ui.LocalScrollState
 import com.rifsxd.ksunext.ui.component.rememberLoadingDialog
 import com.rifsxd.ksunext.ui.rememberScrollConnection
@@ -165,10 +163,8 @@ fun BackupRestoreScreen(navigator: DestinationsNavigator) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val snackBarHost = LocalSnackbarHost.current
 
-    val scrollState = LocalScrollState.current
-    val navBarEnabled = LocalNavBarEnabled.current
-    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+
+    val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
 
     Scaffold(
         topBar = {

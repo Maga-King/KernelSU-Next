@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_panorama">全景布局</string>
+    <string name="aster_panorama_summary">侧边导航与可自选壁纸的首页。关闭后使用标准底部导航布局。</string>
+    <string name="aster_navigation_unavailable">此页面需要已激活且功能完整的 KernelSU，请在首页检查运行状态。</string>
+    <string name="aster_mode_limited">受限模式</string>
+    <string name="aster_navigation">显示导航栏</string>
+    <string name="aster_navigation_summary">根据所选布局显示侧边导航或底部导航。</string>
+</resources>

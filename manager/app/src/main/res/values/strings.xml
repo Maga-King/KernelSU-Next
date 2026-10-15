@@ -196,6 +196,7 @@
     <string name="susfs_load_button">Load</string>
     <string name="susfs_load_in_progress">Loading SUSFS LKM</string>
     <string name="susfs_builtin_loaded">SUSFS is built into the kernel</string>
+    <string name="susfs_already_loaded">SUSFS already loaded</string>
     <string name="susfs_unload_button">Unload</string>
     <string name="susfs_unload_in_progress">Unloading SUSFS LKM</string>
     <string name="susfs_load_summary">Load the SUSFS guard kernel module.</string>

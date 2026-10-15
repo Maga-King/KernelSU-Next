@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_search">Search</string>
+    <string name="aster_clear_search">Clear search</string>
+    <string name="aster_back">Back</string>
+    <string name="aster_kernel_features">Kernel features</string>
+    <string name="aster_security">Security</string>
+    <string name="aster_app_settings">App settings</string>
+</resources>

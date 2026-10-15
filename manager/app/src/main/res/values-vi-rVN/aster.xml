@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">Chào buổi sáng</string>
+    <string name="aster_home_afternoon">Chào buổi chiều</string>
+    <string name="aster_home_evening">Chào buổi tối</string>
+    <string name="aster_home_appearance">Giao diện trang chủ</string>
+    <string name="aster_home_choose_wallpaper">Chọn hình nền</string>
+    <string name="aster_home_clear_wallpaper">Xóa hình nền</string>
+    <string name="aster_home_wallpaper_error">Không thể thay đổi hình nền. Hãy chọn ảnh có thể đọc được và nhỏ hơn 24 MB.</string>
+    <string name="aster_search">Tìm kiếm</string>
+    <string name="aster_clear_search">Xóa nội dung tìm kiếm</string>
+    <string name="aster_back">Quay lại</string>
+    <string name="aster_kernel_features">Tính năng nhân</string>
+    <string name="aster_security">Bảo mật</string>
+    <string name="aster_app_settings">Cài đặt ứng dụng</string>
+    <string name="aster_panorama">Bố cục toàn cảnh</string>
+    <string name="aster_panorama_summary">Dùng thanh điều hướng bên và trang chủ có thể tùy chỉnh hình nền. Tắt để dùng bố cục tiêu chuẩn với thanh điều hướng ở dưới.</string>
+    <string name="aster_navigation_unavailable">Trang này yêu cầu bản cài đặt KernelSU đang hoạt động và hỗ trợ đầy đủ tính năng. Kiểm tra trạng thái trên trang chủ.</string>
+    <string name="aster_mode_limited">Chế độ giới hạn</string>
+    <string name="aster_navigation">Hiển thị điều hướng</string>
+    <string name="aster_navigation_summary">Hiển thị thanh điều hướng ở bên hoặc phía dưới theo bố cục đã chọn.</string>
+</resources>

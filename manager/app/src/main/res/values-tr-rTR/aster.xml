@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">Günaydın</string>
+    <string name="aster_home_afternoon">İyi günler</string>
+    <string name="aster_home_evening">İyi akşamlar</string>
+    <string name="aster_home_appearance">Ana ekran görünümü</string>
+    <string name="aster_home_choose_wallpaper">Duvar kâğıdı seç</string>
+    <string name="aster_home_clear_wallpaper">Duvar kâğıdını kaldır</string>
+    <string name="aster_home_wallpaper_error">Duvar kâğıdı değiştirilemedi. 24 MB boyutundan küçük, okunabilir bir resim seçin.</string>
+    <string name="aster_search">Ara</string>
+    <string name="aster_clear_search">Aramayı temizle</string>
+    <string name="aster_back">Geri</string>
+    <string name="aster_kernel_features">Çekirdek özellikleri</string>
+    <string name="aster_security">Güvenlik</string>
+    <string name="aster_app_settings">Uygulama ayarları</string>
+    <string name="aster_panorama">Panoramik düzen</string>
+    <string name="aster_panorama_summary">Yan gezinme çubuğu ve duvar kâğıdı özelleştirilebilen bir ana ekran kullanır. Standart alt gezinme düzenine dönmek için kapatın.</string>
+    <string name="aster_navigation_unavailable">Bu sayfa için tüm özellikleri destekleyen etkin bir KernelSU kurulumu gerekir. Ana ekrandan durumu kontrol edin.</string>
+    <string name="aster_mode_limited">Sınırlı mod</string>
+    <string name="aster_navigation">Gezinmeyi göster</string>
+    <string name="aster_navigation_summary">Seçilen düzene göre yan veya alt gezinme çubuğunu gösterir.</string>
+</resources>

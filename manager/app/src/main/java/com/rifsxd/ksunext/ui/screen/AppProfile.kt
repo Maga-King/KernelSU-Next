@@ -19,7 +19,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import com.rifsxd.ksunext.ui.LocalNavBarEnabled
 import com.rifsxd.ksunext.ui.LocalScrollState
 import com.rifsxd.ksunext.ui.rememberScrollConnection
 import androidx.compose.ui.platform.LocalDensity
@@ -89,10 +88,8 @@ fun AppProfileScreen(
         mutableStateOf(initialProfile)
     }
 
-    val scrollState = LocalScrollState.current
-    val navBarEnabled = LocalNavBarEnabled.current
-    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+
+    val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
 
     Scaffold(
         topBar = {
@@ -333,7 +330,7 @@ private fun AppMenuBox(packageName: String, content: @Composable () -> Unit) {
     var touchPoint: Offset by remember { mutableStateOf(Offset.Zero) }
     val density = LocalDensity.current
 
-    BoxWithConstraints(
+    Box(
         Modifier
             .fillMaxSize()
             .pointerInput(Unit) {

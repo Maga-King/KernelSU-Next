@@ -10,7 +10,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.semantics.Role
@@ -34,13 +33,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import com.rifsxd.ksunext.ui.LocalNavBarEnabled
 import com.rifsxd.ksunext.ui.LocalScrollState
 import com.rifsxd.ksunext.ui.rememberScrollConnection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -78,7 +77,7 @@ import java.time.format.DateTimeFormatter
 @Destination<RootGraph>
 @Composable
 fun SettingScreen(navigator: DestinationsNavigator) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val snackBarHost = LocalSnackbarHost.current
 
     val isManager = Natives.isManager
@@ -88,11 +87,9 @@ fun SettingScreen(navigator: DestinationsNavigator) {
     val scope = rememberCoroutineScope()
     val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
-    val scrollState = LocalScrollState.current
-    val navBarEnabled = LocalNavBarEnabled.current
-    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
+
     val navBarPadding =
-        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+        com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
 
     val bottomBarScrollState = LocalScrollState.current
     val bottomBarScrollConnection = if (bottomBarScrollState != null) {
@@ -183,10 +180,10 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                     }
                 }
                 .verticalScroll(rememberScrollState())
-                .padding(top = 16.dp)
+                .padding(top = 8.dp)
                 .padding(bottom = navBarPadding)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             if (ksuVersion != null) {
                 KernelFeaturesCard(
@@ -249,9 +246,9 @@ private fun KernelFeaturesCard(
     val selinuxHideSupported = selinuxHideStatus == "supported"
     val avcSpoofSupported = avcSpoofStatus == "supported"
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    AsterSettingsGroup(stringResource(R.string.aster_kernel_features)) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             var umountChecked by rememberSaveable {
@@ -595,9 +592,9 @@ private fun SecurityCard(
         }
     }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    AsterSettingsGroup(stringResource(R.string.aster_security)) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             var isSelinuxPermissive by rememberSaveable {
@@ -813,9 +810,9 @@ private fun AppSettingsCard(
     context: Context,
     isUnrooted: Boolean
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    AsterSettingsGroup(stringResource(R.string.aster_app_settings)) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             var checkUpdate by rememberSaveable {
@@ -1200,17 +1197,44 @@ fun rememberUninstallDialog(onSelected: (UninstallType) -> Unit): DialogHandle {
 private fun TopBar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
 ) {
-    TopAppBar(
+    LargeTopAppBar(
         title = {
             Text(
                 text = stringResource(R.string.settings),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         },
+        colors = TopAppBarDefaults.largeTopAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background,
+            scrolledContainerColor = MaterialTheme.colorScheme.background,
+        ),
         windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
         scrollBehavior = scrollBehavior
     )
+}
+
+/** Aster-inspired section labels and quiet, rounded preference groups. */
+@Composable
+private fun AsterSettingsGroup(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            text = title,
+            modifier = Modifier.padding(horizontal = 16.dp),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            content = content,
+        )
+    }
 }
 
 @Preview

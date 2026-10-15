@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">Доброго ранку</string>
+    <string name="aster_home_afternoon">Добрий день</string>
+    <string name="aster_home_evening">Добрий вечір</string>
+    <string name="aster_home_appearance">Оформлення головного екрана</string>
+    <string name="aster_home_choose_wallpaper">Вибрати шпалери</string>
+    <string name="aster_home_clear_wallpaper">Видалити шпалери</string>
+    <string name="aster_home_wallpaper_error">Не вдалося змінити шпалери. Виберіть доступне для читання зображення розміром менше ніж 24 МБ.</string>
+    <string name="aster_search">Пошук</string>
+    <string name="aster_clear_search">Очистити пошук</string>
+    <string name="aster_back">Назад</string>
+    <string name="aster_kernel_features">Можливості ядра</string>
+    <string name="aster_security">Безпека</string>
+    <string name="aster_app_settings">Налаштування застосунку</string>
+    <string name="aster_panorama">Панорамний інтерфейс</string>
+    <string name="aster_panorama_summary">Бічна навігація та головний екран із можливістю вибору шпалер. Вимкніть, щоб використовувати стандартний інтерфейс із нижньою панеллю навігації.</string>
+    <string name="aster_navigation_unavailable">Для цієї сторінки потрібна активна інсталяція KernelSU з підтримкою всіх функцій. Перевірте стан на головному екрані.</string>
+    <string name="aster_mode_limited">Обмежений режим</string>
+    <string name="aster_navigation">Показувати навігацію</string>
+    <string name="aster_navigation_summary">Показувати бічну або нижню панель навігації відповідно до вибраного інтерфейсу.</string>
+</resources>

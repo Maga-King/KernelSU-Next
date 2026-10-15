@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">Guten Morgen</string>
+    <string name="aster_home_afternoon">Guten Tag</string>
+    <string name="aster_home_evening">Guten Abend</string>
+    <string name="aster_home_appearance">Darstellung der Startseite</string>
+    <string name="aster_home_choose_wallpaper">Hintergrundbild auswählen</string>
+    <string name="aster_home_clear_wallpaper">Hintergrundbild entfernen</string>
+    <string name="aster_home_wallpaper_error">Das Hintergrundbild konnte nicht aktualisiert werden. Wähle eine lesbare Bilddatei mit weniger als 24 MB.</string>
+    <string name="aster_search">Suchen</string>
+    <string name="aster_clear_search">Suche leeren</string>
+    <string name="aster_back">Zurück</string>
+    <string name="aster_kernel_features">Kernel-Funktionen</string>
+    <string name="aster_security">Sicherheit</string>
+    <string name="aster_app_settings">App-Einstellungen</string>
+    <string name="aster_panorama">Panorama-Layout</string>
+    <string name="aster_panorama_summary">Seitliche Navigation und eine Startseite mit Hintergrundbild. Deaktivieren, um das Standardlayout mit unterer Navigation zu verwenden.</string>
+    <string name="aster_navigation_unavailable">Diese Seite erfordert eine aktive KernelSU-Installation mit vollem Funktionsumfang. Prüfe den Status auf der Startseite.</string>
+    <string name="aster_mode_limited">Eingeschränkter Modus</string>
+    <string name="aster_navigation">Navigation anzeigen</string>
+    <string name="aster_navigation_summary">Zeigt je nach gewähltem Layout die seitliche oder untere Navigationsleiste an.</string>
+</resources>

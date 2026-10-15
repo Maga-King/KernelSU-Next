@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">God morgon</string>
+    <string name="aster_home_afternoon">God eftermiddag</string>
+    <string name="aster_home_evening">God kväll</string>
+    <string name="aster_home_appearance">Hemskärmens utseende</string>
+    <string name="aster_home_choose_wallpaper">Välj bakgrundsbild</string>
+    <string name="aster_home_clear_wallpaper">Ta bort bakgrundsbild</string>
+    <string name="aster_home_wallpaper_error">Det gick inte att ändra bakgrundsbilden. Välj en läsbar bild som är mindre än 24 MB.</string>
+    <string name="aster_search">Sök</string>
+    <string name="aster_clear_search">Rensa sökning</string>
+    <string name="aster_back">Tillbaka</string>
+    <string name="aster_kernel_features">Kärnfunktioner</string>
+    <string name="aster_security">Säkerhet</string>
+    <string name="aster_app_settings">Appinställningar</string>
+    <string name="aster_panorama">Panoramalayout</string>
+    <string name="aster_panorama_summary">Sidonavigering och en hemskärm med valfri bakgrundsbild. Stäng av för att använda standardlayouten med navigering längst ned.</string>
+    <string name="aster_navigation_unavailable">Den här sidan kräver en aktiv KernelSU-installation med stöd för alla funktioner. Kontrollera statusen på hemskärmen.</string>
+    <string name="aster_mode_limited">Begränsat läge</string>
+    <string name="aster_navigation">Visa navigering</string>
+    <string name="aster_navigation_summary">Visa navigeringsfältet vid sidan eller längst ned utifrån den valda layouten.</string>
+</resources>

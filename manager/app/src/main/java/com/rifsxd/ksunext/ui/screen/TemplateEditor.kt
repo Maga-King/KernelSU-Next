@@ -16,11 +16,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
-import com.rifsxd.ksunext.ui.LocalNavBarEnabled
 import com.rifsxd.ksunext.ui.LocalScrollState
 import com.rifsxd.ksunext.ui.rememberScrollConnection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -76,10 +74,8 @@ fun TemplateEditorScreen(
         )
     } else null
 
-    val scrollState = LocalScrollState.current
-    val navBarEnabled = LocalNavBarEnabled.current
-    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+
+    val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
 
     BackHandler {
         navigator.navigateBack(result = !readOnly)

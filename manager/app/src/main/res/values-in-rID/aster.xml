@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">Selamat pagi</string>
+    <string name="aster_home_afternoon">Selamat siang</string>
+    <string name="aster_home_evening">Selamat malam</string>
+    <string name="aster_home_appearance">Tampilan beranda</string>
+    <string name="aster_home_choose_wallpaper">Pilih wallpaper</string>
+    <string name="aster_home_clear_wallpaper">Hapus wallpaper</string>
+    <string name="aster_home_wallpaper_error">Wallpaper tidak dapat diperbarui. Pilih gambar yang dapat dibaca dengan ukuran kurang dari 24 MB.</string>
+    <string name="aster_search">Cari</string>
+    <string name="aster_clear_search">Hapus pencarian</string>
+    <string name="aster_back">Kembali</string>
+    <string name="aster_kernel_features">Fitur kernel</string>
+    <string name="aster_security">Keamanan</string>
+    <string name="aster_app_settings">Setelan aplikasi</string>
+    <string name="aster_panorama">Tata letak panorama</string>
+    <string name="aster_panorama_summary">Navigasi samping dan beranda yang mendukung wallpaper. Nonaktifkan untuk memakai tata letak standar dengan navigasi bawah.</string>
+    <string name="aster_navigation_unavailable">Halaman ini memerlukan instalasi KernelSU yang aktif dengan fitur lengkap. Periksa statusnya di Beranda.</string>
+    <string name="aster_mode_limited">Mode terbatas</string>
+    <string name="aster_navigation">Tampilkan navigasi</string>
+    <string name="aster_navigation_summary">Tampilkan bilah navigasi samping atau bawah sesuai tata letak yang dipilih.</string>
+</resources>

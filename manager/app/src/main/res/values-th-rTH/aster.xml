@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">สวัสดีตอนเช้า</string>
+    <string name="aster_home_afternoon">สวัสดีตอนบ่าย</string>
+    <string name="aster_home_evening">สวัสดีตอนเย็น</string>
+    <string name="aster_home_appearance">รูปแบบหน้าหลัก</string>
+    <string name="aster_home_choose_wallpaper">เลือกวอลเปเปอร์</string>
+    <string name="aster_home_clear_wallpaper">ลบวอลเปเปอร์</string>
+    <string name="aster_home_wallpaper_error">ไม่สามารถเปลี่ยนวอลเปเปอร์ได้ โปรดเลือกรูปภาพที่อ่านได้และมีขนาดเล็กกว่า 24 MB</string>
+    <string name="aster_search">ค้นหา</string>
+    <string name="aster_clear_search">ล้างการค้นหา</string>
+    <string name="aster_back">กลับ</string>
+    <string name="aster_kernel_features">ฟีเจอร์เคอร์เนล</string>
+    <string name="aster_security">ความปลอดภัย</string>
+    <string name="aster_app_settings">การตั้งค่าแอป</string>
+    <string name="aster_panorama">เค้าโครงพาโนรามา</string>
+    <string name="aster_panorama_summary">ใช้แถบนำทางด้านข้างและหน้าหลักที่ตั้งค่าวอลเปเปอร์ได้ ปิดเพื่อใช้เค้าโครงมาตรฐานที่มีแถบนำทางด้านล่าง</string>
+    <string name="aster_navigation_unavailable">หน้านี้ต้องใช้ KernelSU ที่ติดตั้งและทำงานอยู่พร้อมรองรับฟีเจอร์ครบถ้วน ตรวจสอบสถานะได้ที่หน้าหลัก</string>
+    <string name="aster_mode_limited">โหมดจำกัด</string>
+    <string name="aster_navigation">แสดงแถบนำทาง</string>
+    <string name="aster_navigation_summary">แสดงแถบนำทางด้านข้างหรือด้านล่างตามเค้าโครงที่เลือก</string>
+</resources>

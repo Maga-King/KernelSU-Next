@@ -23,8 +23,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.rifsxd.ksunext.ui.LocalNavBarEnabled
 import com.rifsxd.ksunext.ui.LocalScrollState
 import com.rifsxd.ksunext.ui.rememberScrollConnection
 import androidx.compose.ui.res.stringResource
@@ -140,11 +138,10 @@ fun ModuleRepoScreen(navigator: DestinationsNavigator) {
 
     val isManager = Natives.isManager
     val ksuVersion = if (isManager) Natives.version else null
-    val scrollState = LocalScrollState.current
-    val navBarEnabled = LocalNavBarEnabled.current
+
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+
+    val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
 
     var jsonUrls by remember { mutableStateOf(loadJsonUrls(context)) }
     var nonFreeEnabled by remember { mutableStateOf(loadNonFreeEnabled(context)) }

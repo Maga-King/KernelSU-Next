@@ -9,20 +9,17 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Wysiwyg
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Cloud
@@ -40,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -59,7 +55,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.edit
 import androidx.core.net.toUri
-import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -117,7 +112,7 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
 
     val hideInstallButton = hasMagisk
 
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     var zipUri by remember { mutableStateOf<Uri?>(null) }
     var zipUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
@@ -165,17 +160,18 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
 
     val scrollState = LocalScrollState.current
     val navBarEnabled = LocalNavBarEnabled.current
-    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+
+    val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
 
     Scaffold(
         topBar = {
             SearchAppBar(
+                largeTitle = true,
                 title = {
                     Text(
                         text = stringResource(R.string.module),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 searchText = viewModel.search,
@@ -693,8 +689,8 @@ private fun ModuleList(
     ) {
         val scrollState = LocalScrollState.current
         val navBarEnabled = LocalNavBarEnabled.current
-        val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
-        val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+
+        val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
 
         LazyColumn(
             state = listState,
@@ -797,7 +793,7 @@ private fun ModuleList(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun ModuleItem(
     navigator: DestinationsNavigator,
@@ -948,9 +944,12 @@ fun ModuleItem(
     }
 
     Card(
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
+            .clip(RoundedCornerShape(28.dp))
             .combinedClickable(
                 onClick = onExpandToggle,
                 onLongClick = {
@@ -972,19 +971,7 @@ fun ModuleItem(
             val textDecoration = if (!module.remove) null else TextDecoration.LineThrough
 
             if (useBanner && module.banner.isNotEmpty()) {
-                val isDark = isSystemInDarkTheme()
-                val colorScheme = MaterialTheme.colorScheme
-                val context = LocalContext.current
-                val amoledMode = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-                    .getBoolean("amoled_mode", false)
-                val isDynamic = colorScheme.primary != colorScheme.secondary
-
-                val fadeColor = when {
-                    amoledMode && isDark -> Color.Black
-                    isDynamic -> colorScheme.surface
-                    isDark -> Color(0xFF222222)
-                    else -> Color.White
-                }
+                val fadeColor = MaterialTheme.colorScheme.surfaceContainerLow
 
                 Box(
                     modifier = Modifier
@@ -1057,7 +1044,7 @@ fun ModuleItem(
 
                 Column(
                     modifier = Modifier
-                        .padding(22.dp, 18.dp, 22.dp, 12.dp)
+                        .padding(20.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1071,14 +1058,12 @@ fun ModuleItem(
                         val moduleUpdateJsonEmpty = stringResource(id = R.string.module_update_json_empty)
 
                         Column(
-                            modifier = Modifier.fillMaxWidth(0.8f)
+                            modifier = Modifier.weight(1f).padding(end = 8.dp)
                         ) {
                             Text(
                                 text = module.name,
-                                fontSize = MaterialTheme.typography.titleMedium.fontSize,
-                                fontWeight = FontWeight.SemiBold,
-                                lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                fontFamily = MaterialTheme.typography.titleMedium.fontFamily,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Medium,
                                 textDecoration = textDecoration
                             )
 
@@ -1126,10 +1111,7 @@ fun ModuleItem(
                             }
                         }
 
-                        Spacer(modifier = Modifier.weight(1f))
-
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End,
                         ) {
                             Switch(
@@ -1156,9 +1138,9 @@ fun ModuleItem(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         LabelItem(
                             text = formatSize(module.size)
@@ -1244,6 +1226,7 @@ fun ModuleItem(
                     Spacer(modifier = Modifier.height(2.dp))
 
                     if (expanded) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
                         Spacer(modifier = Modifier.height(10.dp))
                     }
 
@@ -1252,9 +1235,10 @@ fun ModuleItem(
                         enter = fadeIn() + expandVertically(),
                         exit = shrinkVertically() + fadeOut()
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             if (module.hasActionScript) {
                                 FilledTonalButton(
@@ -1281,7 +1265,6 @@ fun ModuleItem(
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.weight(0.1f, true))
                             }
 
                             if (module.hasWebUi) {
@@ -1307,7 +1290,6 @@ fun ModuleItem(
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.weight(0.1f, true))
                             }
 
                             if (module.donate.isNotEmpty()) {
@@ -1342,7 +1324,6 @@ fun ModuleItem(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.weight(1f, true))
 
                             if (updateUrl.isNotEmpty() && !module.remove && !module.update) {
                                 Button(
@@ -1367,7 +1348,6 @@ fun ModuleItem(
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.weight(0.1f, true))
                             }
 
                             if (module.remove) {
@@ -1395,6 +1375,10 @@ fun ModuleItem(
                                     modifier = Modifier.defaultMinSize(52.dp, 32.dp),
                                     enabled = true,
                                     onClick = { onUninstall(module) },
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                    ),
                                     contentPadding = ButtonDefaults.TextButtonContentPadding
                                 ) {
                                     Icon(

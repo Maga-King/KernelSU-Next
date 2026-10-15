@@ -1,8 +1,5 @@
 package com.rifsxd.ksunext.ui.screen.sulog
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,13 +11,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -45,17 +39,15 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -75,7 +67,6 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.rifsxd.ksunext.R
 import com.rifsxd.ksunext.ui.LocalScrollState
-import com.rifsxd.ksunext.ui.LocalNavBarEnabled
 import com.rifsxd.ksunext.ui.rememberScrollConnection
 import com.rifsxd.ksunext.ui.component.SearchAppBar
 import com.rifsxd.ksunext.ui.util.SulogEntry
@@ -84,7 +75,6 @@ import com.rifsxd.ksunext.ui.util.SulogEventType
 import com.rifsxd.ksunext.ui.util.SulogFile
 import com.rifsxd.ksunext.ui.util.toSulogDisplayName
 import com.rifsxd.ksunext.ui.viewmodel.SulogViewModel
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -185,10 +175,9 @@ fun SuLogScreen(
                     modifier = Modifier
                         .fillMaxSize()
                 ) {
-                    val scrollState = LocalScrollState.current
-                    val navBarEnabled = LocalNavBarEnabled.current
-                    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
-                    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+
+
+                    val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
 
                     LazyColumn(
                     state = listState,

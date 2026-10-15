@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">صباح الخير</string>
+    <string name="aster_home_afternoon">طاب نهارك</string>
+    <string name="aster_home_evening">مساء الخير</string>
+    <string name="aster_home_appearance">مظهر الصفحة الرئيسية</string>
+    <string name="aster_home_choose_wallpaper">اختيار خلفية</string>
+    <string name="aster_home_clear_wallpaper">إزالة الخلفية</string>
+    <string name="aster_home_wallpaper_error">تعذر تحديث الخلفية. اختر صورة قابلة للقراءة بحجم أقل من 24 ميغابايت.</string>
+    <string name="aster_search">بحث</string>
+    <string name="aster_clear_search">مسح البحث</string>
+    <string name="aster_back">رجوع</string>
+    <string name="aster_kernel_features">ميزات النواة</string>
+    <string name="aster_security">الأمان</string>
+    <string name="aster_app_settings">إعدادات التطبيق</string>
+    <string name="aster_panorama">تخطيط بانورامي</string>
+    <string name="aster_panorama_summary">تنقل جانبي وصفحة رئيسية تدعم الخلفيات. عطّل هذا الخيار لاستخدام التخطيط القياسي بشريط التنقل السفلي.</string>
+    <string name="aster_navigation_unavailable">تتطلب هذه الصفحة تثبيت KernelSU نشطًا بكامل الميزات. تحقق من الحالة في الصفحة الرئيسية.</string>
+    <string name="aster_mode_limited">وضع محدود</string>
+    <string name="aster_navigation">إظهار التنقل</string>
+    <string name="aster_navigation_summary">عرض شريط التنقل الجانبي أو السفلي وفقًا للتخطيط المحدد.</string>
+</resources>

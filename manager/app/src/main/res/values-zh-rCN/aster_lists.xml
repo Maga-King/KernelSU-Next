@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_search">搜索</string>
+    <string name="aster_clear_search">清除搜索</string>
+    <string name="aster_back">返回</string>
+    <string name="aster_kernel_features">内核功能</string>
+    <string name="aster_security">安全</string>
+    <string name="aster_app_settings">应用设置</string>
+</resources>

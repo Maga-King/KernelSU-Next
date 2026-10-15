@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_panorama">Panoramic layout</string>
+    <string name="aster_panorama_summary">Side navigation and a wallpaper-ready home. Turn off for the standard bottom navigation layout.</string>
+    <string name="aster_navigation_unavailable">This page requires an active, full-featured KernelSU installation. Check the status on Home.</string>
+    <string name="aster_mode_limited">Limited mode</string>
+    <string name="aster_navigation">Show navigation</string>
+    <string name="aster_navigation_summary">Display the side rail or bottom bar for the selected layout.</string>
+</resources>

@@ -1,6 +1,7 @@
 package com.rifsxd.ksunext.ui.screen
 
 import android.content.Context
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -15,7 +16,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.ViewCarousel
-import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.Dock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import com.rifsxd.ksunext.ui.LocalNavBarEnabled
 import com.rifsxd.ksunext.ui.LocalScrollState
 import com.rifsxd.ksunext.ui.rememberScrollConnection
 import androidx.compose.ui.res.stringResource
@@ -73,10 +72,8 @@ fun CustomizationScreen(navigator: DestinationsNavigator) {
     val isManager = Natives.isManager
     val ksuVersion = if (isManager) Natives.version else null
 
-    val scrollState = LocalScrollState.current
-    val navBarEnabled = LocalNavBarEnabled.current
-    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+
+    val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
 
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
@@ -125,6 +122,7 @@ fun CustomizationScreen(navigator: DestinationsNavigator) {
                     }
                 }
                 .verticalScroll(rememberScrollState())
+                .padding(bottom = navBarPadding)
         ) {
 
             val language = stringResource(id = R.string.settings_language)
@@ -167,7 +165,7 @@ fun CustomizationScreen(navigator: DestinationsNavigator) {
                 )
             }
             if (isSystemInDarkTheme()) {
-                val activity = LocalContext.current as? MainActivity
+                val activity = LocalActivity.current as? MainActivity
                 SwitchItem(
                     icon = Icons.Filled.Contrast,
                     title = stringResource(id = R.string.settings_amoled_mode),
@@ -184,11 +182,20 @@ fun CustomizationScreen(navigator: DestinationsNavigator) {
                     prefs.getBoolean("enable_navbar", true)
                 )
             }
-            val activity = LocalContext.current as? MainActivity
+            val activity = LocalActivity.current as? MainActivity
+            val panorama = activity?.panoramaEnabled?.value ?: true
+            SwitchItem(
+                icon = Icons.Filled.ViewCarousel,
+                title = stringResource(R.string.aster_panorama),
+                summary = stringResource(R.string.aster_panorama_summary),
+                checked = panorama,
+            ) { checked ->
+                activity?.setPanoramaEnabled(checked)
+            }
             SwitchItem(
                 icon = Icons.Filled.Dock,
-                title = stringResource(id = R.string.settings_navbar),
-                summary = stringResource(id = R.string.settings_navbar_summary),
+                title = stringResource(id = R.string.aster_navigation),
+                summary = stringResource(id = R.string.aster_navigation_summary),
                 checked = enableNavBar
             ) { checked ->
                 activity?.setNavBarEnabled(checked)

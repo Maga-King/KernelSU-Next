@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -15,13 +16,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.rifsxd.ksunext.R
 
 private const val TAG = "SearchBar"
 
@@ -36,7 +40,8 @@ fun SearchAppBar(
     onConfirm: (() -> Unit)? = null,
     actionsContent: @Composable (() -> Unit)? = null,
     dropdownContent: @Composable (() -> Unit)? = null,
-    scrollBehavior: TopAppBarScrollBehavior? = null
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+    largeTitle: Boolean = false,
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
@@ -49,6 +54,62 @@ fun SearchAppBar(
         onDispose {
             keyboardController?.hide()
         }
+    }
+
+    // Aster-inspired large page heading and always-visible, pill-shaped search.
+    // Keep compact search for detail pages that already use this component.
+    if (largeTitle) {
+        Column {
+            LargeTopAppBar(
+                title = title,
+                navigationIcon = {
+                    onBackClick?.let { back ->
+                        IconButton(onClick = back) {
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.aster_back))
+                        }
+                    }
+                },
+                actions = {
+                    actionsContent?.invoke()
+                    dropdownContent?.invoke()
+                },
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background,
+                ),
+                windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+                scrollBehavior = scrollBehavior,
+            )
+            TextField(
+                value = searchText,
+                onValueChange = onSearchTextChange,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(28.dp),
+                placeholder = { Text(stringResource(R.string.aster_search)) },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (searchText.isNotEmpty()) {
+                        IconButton(onClick = onClearClick) {
+                            Icon(Icons.Filled.Close, stringResource(R.string.aster_clear_search))
+                        }
+                    }
+                },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                ),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = {
+                    keyboardController?.hide()
+                    onConfirm?.invoke()
+                }),
+            )
+        }
+        return
     }
 
     TopAppBar(

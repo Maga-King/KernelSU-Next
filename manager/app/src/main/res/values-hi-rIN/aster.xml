@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">सुप्रभात</string>
+    <string name="aster_home_afternoon">शुभ दोपहर</string>
+    <string name="aster_home_evening">शुभ संध्या</string>
+    <string name="aster_home_appearance">होम का रूप</string>
+    <string name="aster_home_choose_wallpaper">वॉलपेपर चुनें</string>
+    <string name="aster_home_clear_wallpaper">वॉलपेपर हटाएँ</string>
+    <string name="aster_home_wallpaper_error">वॉलपेपर अपडेट नहीं हो सका। 24 एमबी से छोटी ऐसी इमेज चुनें जिसे पढ़ा जा सके।</string>
+    <string name="aster_search">खोजें</string>
+    <string name="aster_clear_search">खोज साफ़ करें</string>
+    <string name="aster_back">वापस</string>
+    <string name="aster_kernel_features">कर्नेल की सुविधाएँ</string>
+    <string name="aster_security">सुरक्षा</string>
+    <string name="aster_app_settings">ऐप की सेटिंग्स</string>
+    <string name="aster_panorama">पैनोरमिक लेआउट</string>
+    <string name="aster_panorama_summary">बगल में नेविगेशन और वॉलपेपर की सुविधा वाला होम। नीचे नेविगेशन वाला सामान्य लेआउट इस्तेमाल करने के लिए इसे बंद करें।</string>
+    <string name="aster_navigation_unavailable">इस पेज के लिए सभी सुविधाओं वाला सक्रिय KernelSU इंस्टॉलेशन ज़रूरी है। होम पर स्थिति देखें।</string>
+    <string name="aster_mode_limited">सीमित मोड</string>
+    <string name="aster_navigation">नेविगेशन दिखाएँ</string>
+    <string name="aster_navigation_summary">चुने हुए लेआउट के अनुसार बगल या नीचे नेविगेशन बार दिखाएँ।</string>
+</resources>

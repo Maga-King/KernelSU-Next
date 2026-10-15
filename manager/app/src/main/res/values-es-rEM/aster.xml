@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">Buenos días</string>
+    <string name="aster_home_afternoon">Buenas tardes</string>
+    <string name="aster_home_evening">Buenas noches</string>
+    <string name="aster_home_appearance">Apariencia del inicio</string>
+    <string name="aster_home_choose_wallpaper">Elegir fondo de pantalla</string>
+    <string name="aster_home_clear_wallpaper">Quitar fondo de pantalla</string>
+    <string name="aster_home_wallpaper_error">No se pudo actualizar el fondo de pantalla. Elige una imagen que se pueda leer y que ocupe menos de 24 MB.</string>
+    <string name="aster_search">Buscar</string>
+    <string name="aster_clear_search">Borrar búsqueda</string>
+    <string name="aster_back">Atrás</string>
+    <string name="aster_kernel_features">Funciones del kernel</string>
+    <string name="aster_security">Seguridad</string>
+    <string name="aster_app_settings">Configuración de la app</string>
+    <string name="aster_panorama">Diseño panorámico</string>
+    <string name="aster_panorama_summary">Navegación lateral e inicio con soporte para fondos de pantalla. Desactívalo para usar el diseño estándar con navegación inferior.</string>
+    <string name="aster_navigation_unavailable">Esta página requiere una instalación activa de KernelSU con todas las funciones disponibles. Consulta el estado en Inicio.</string>
+    <string name="aster_mode_limited">Modo limitado</string>
+    <string name="aster_navigation">Mostrar navegación</string>
+    <string name="aster_navigation_summary">Muestra la barra de navegación lateral o inferior según el diseño elegido.</string>
+</resources>

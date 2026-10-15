@@ -2,8 +2,6 @@ package com.rifsxd.ksunext.ui.screen
 
 import android.content.Context
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,8 +22,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.rifsxd.ksunext.ui.LocalNavBarEnabled
 import com.rifsxd.ksunext.ui.LocalScrollState
 import com.rifsxd.ksunext.ui.rememberScrollConnection
 import androidx.compose.ui.res.stringResource
@@ -108,10 +104,9 @@ fun MetaModuleScreen(navigator: DestinationsNavigator) {
 
     val isManager = Natives.isManager
     val ksuVersion = if (isManager) Natives.version else null
-    val scrollState = LocalScrollState.current
-    val navBarEnabled = LocalNavBarEnabled.current
-    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+
+
+    val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
     val modulesJsonUrl = "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next-Modules-Repo/refs/heads/main/meta_modules.json"
 
     var moduleState by remember { mutableStateOf<MetaModuleState>(MetaModuleState.Loading) }

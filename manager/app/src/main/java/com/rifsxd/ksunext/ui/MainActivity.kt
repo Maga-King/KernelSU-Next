@@ -12,38 +12,26 @@ import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.*
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.activity.viewModels
 import androidx.navigation.NavBackStackEntry
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.geometry.Offset
@@ -57,20 +45,20 @@ import kotlinx.coroutines.launch
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationStyle
 import com.ramcosta.composedestinations.generated.NavGraphs
-import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ExecuteModuleActionScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ModuleScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SuperUserScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingScreenDestination
-import com.ramcosta.composedestinations.utils.isRouteOnBackStackAsState
 import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
 import com.rifsxd.ksunext.Natives
 import com.rifsxd.ksunext.R
-import com.rifsxd.ksunext.ksuApp
 import com.rifsxd.ksunext.ui.screen.BottomBarDestination
 import com.rifsxd.ksunext.ui.screen.FlashIt
 import com.rifsxd.ksunext.ui.theme.KernelSUTheme
+import com.rifsxd.ksunext.ui.shell.AsterNavigation
+import com.rifsxd.ksunext.ui.shell.LocalAsterPanorama
+import com.rifsxd.ksunext.ui.shell.LocalNavigationBottomInset
 import com.rifsxd.ksunext.ui.util.*
 import com.rifsxd.ksunext.ui.viewmodel.ModuleViewModel
 import com.rifsxd.ksunext.ui.viewmodel.SuperUserViewModel
@@ -207,6 +195,7 @@ class MainActivity : FragmentActivity() {
     var moduleActionId by mutableStateOf<String?>(null)
     var amoledModeState = mutableStateOf(false)
     var navBarEnabled = mutableStateOf(true)
+    var panoramaEnabled = mutableStateOf(true)
     private val handler = Handler(Looper.getMainLooper())
 
     val moduleViewModel: ModuleViewModel by viewModels()
@@ -238,6 +227,7 @@ class MainActivity : FragmentActivity() {
             val prefsInit = getSharedPreferences("settings", MODE_PRIVATE)
             amoledModeState.value = prefsInit.getBoolean("enable_amoled", false)
             navBarEnabled.value = prefsInit.getBoolean("enable_navbar", true)
+            panoramaEnabled.value = prefsInit.getBoolean("aster_panorama", true)
         } catch (_: Exception) {}
 
         val isManager = Natives.isManager
@@ -311,7 +301,7 @@ class MainActivity : FragmentActivity() {
                     } else {
                         val navController = rememberNavController()
                         val snackBarHostState = remember { SnackbarHostState() }
-                        val currentDestination = navController.currentBackStackEntryAsState().value?.destination
+
                         val bottomBarRoutes = remember {
                             BottomBarDestination.entries.map { it.direction.route }.toSet()
                         }
@@ -329,26 +319,19 @@ class MainActivity : FragmentActivity() {
                         if (homeDestination != null && startRoute != null) {
                             BackHandler(enabled = currentRoute != startRoute && currentRoute in bottomBarRoutes) {
                                 navigator.navigate(homeDestination.direction) {
-                                    popUpTo(NavGraphs.root) {
+                                    popUpTo(NavGraphs.root.startRoute) {
                                         saveState = true
                                     }
                                     launchSingleTop = true
-                                    restoreState = true
+                                    restoreState = false
                                 }
                             }
                         }
-
-                        // Track the last bottom bar destination index for directional animations
-                        var lastBottomBarIndex by remember { mutableStateOf(0) }
-                        var isBottomBarNavigation by remember { mutableStateOf(false) }
 
                         // Scroll state for bottom bar visibility
                         val isScrollingDown = remember { mutableStateOf(false) }
                         val scrollOffset = remember { mutableStateOf(0f) }
                         val previousScrollOffset = remember { mutableStateOf(0f) }
-
-                        // Remember the last valid navbar selection (persists across navbar hide/show)
-                        val lastValidNavbarSelection = remember { mutableStateOf(0) }
 
                         LaunchedEffect(zipUri, navigateLoc, moduleActionId) {
                             if (moduleActionId != null) {
@@ -403,16 +386,30 @@ class MainActivity : FragmentActivity() {
                             }
                         }
 
-                        val showBottomBar = when (currentDestination?.route) {
-                            FlashScreenDestination.route -> false // Hide for FlashScreenDestination
-                            ExecuteModuleActionScreenDestination.route -> false // Hide for ExecuteModuleActionScreen
-                            else -> !isScrollingDown.value && navBarEnabled.value
+                        // Both layouts keep detail/installation screens full width. Navigation
+                        // belongs to primary pages and never covers a running installation.
+                        val primaryPage = currentRoute == null || currentRoute in bottomBarRoutes
+                        val showRail = primaryPage && navBarEnabled.value && panoramaEnabled.value
+                        val showBottomBar = primaryPage && navBarEnabled.value && !panoramaEnabled.value
+                        val density = LocalDensity.current
+                        val systemBottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                        var navigationHeight by remember { mutableStateOf(112.dp) }
+                        val modeLabel = when {
+                            isManager && Natives.isSafeMode -> stringResource(R.string.safe_mode)
+                            fullFeatured -> "KernelSU"
+                            isManager -> stringResource(R.string.aster_mode_limited)
+                            else -> stringResource(R.string.home_not_installed)
+                        }
+                        val unavailableMessage = stringResource(R.string.aster_navigation_unavailable)
+                        val showUnavailable = {
+                            Toast.makeText(this@MainActivity, unavailableMessage, Toast.LENGTH_LONG).show()
                         }
 
                         Scaffold(
                             contentWindowInsets = WindowInsets(0, 0, 0, 0)
                         ) { innerPadding ->
-                            Box(modifier = Modifier.fillMaxSize()) {
+                            Box(modifier = Modifier.fillMaxSize()
+                                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
                                 CompositionLocalProvider(
                                     LocalSnackbarHost provides snackBarHostState,
                                     LocalScrollState provides ScrollState(
@@ -420,7 +417,9 @@ class MainActivity : FragmentActivity() {
                                         scrollOffset = scrollOffset,
                                         previousScrollOffset = previousScrollOffset,
                                     ),
-                                    LocalNavBarEnabled provides navBarEnabled
+                                    LocalNavBarEnabled provides navBarEnabled,
+                                    LocalAsterPanorama provides panoramaEnabled.value,
+                                    LocalNavigationBottomInset provides if (showBottomBar) navigationHeight else 0.dp
                                 ) {
                                     val visibleDestinations = remember(fullFeatured) {
                                         BottomBarDestination.entries.filter { fullFeatured || !it.rootRequired }
@@ -435,7 +434,7 @@ class MainActivity : FragmentActivity() {
                                                 saveState = true
                                             }
                                             launchSingleTop = true
-                                            restoreState = true
+                                            restoreState = destination != BottomBarDestination.Home
                                         }
                                     }
 
@@ -445,8 +444,9 @@ class MainActivity : FragmentActivity() {
 
                                     val hostModifier = Modifier
                                         .padding(innerPadding)
+                                        .padding(start = if (showRail) 80.dp else 0.dp)
                                         .fillMaxSize()
-                                        .horizontalSwipeNavigator(
+                                        .then(if (!panoramaEnabled.value) Modifier.horizontalSwipeNavigator(
                                             currentRoute = currentRoute,
                                             destinations = visibleDestinations,
                                             isRtl = isRtl,
@@ -454,7 +454,7 @@ class MainActivity : FragmentActivity() {
                                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.GestureEnd)
                                                 navigateToIndex(it)
                                             }
-                                        )
+                                        ) else Modifier)
 
                                     DestinationsNavHost(
                                         modifier = hostModifier,
@@ -550,14 +550,34 @@ class MainActivity : FragmentActivity() {
                                     )
                                 }
 
-                                // Floating Bottom Bar as overlay
+                                if (showRail) {
+                                    AsterNavigation(
+                                        navController = navController,
+                                        fullFeatured = fullFeatured,
+                                        rail = true,
+                                        modeLabel = modeLabel,
+                                        onUnavailable = showUnavailable,
+                                        modifier = Modifier.align(Alignment.CenterStart),
+                                    )
+                                }
+
+                                // Standard layout uses Aster's labelled floating bottom bar.
                                 AnimatedVisibility(
                                     visible = showBottomBar,
                                     modifier = Modifier.align(Alignment.BottomCenter),
                                     enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
                                     exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
                                 ) {
-                                    BottomBar(navController, lastValidNavbarSelection)
+                                    AsterNavigation(
+                                        navController = navController,
+                                        fullFeatured = fullFeatured,
+                                        rail = false,
+                                        modeLabel = modeLabel,
+                                        onUnavailable = showUnavailable,
+                                        modifier = Modifier.onSizeChanged {
+                                            navigationHeight = maxOf(0.dp, with(density) { it.height.toDp() } - systemBottomInset)
+                                        },
+                                    )
                                 }
                             }
                         }
@@ -641,6 +661,12 @@ class MainActivity : FragmentActivity() {
         navBarEnabled.value = enabled
     }
 
+    fun setPanoramaEnabled(enabled: Boolean) {
+        getSharedPreferences("settings", MODE_PRIVATE).edit()
+            .putBoolean("aster_panorama", enabled).apply()
+        panoramaEnabled.value = enabled
+    }
+
     override fun onStart() {
         super.onStart()
         com.rifsxd.ksunext.ui.util.AppLockManager.onActivityStart()
@@ -693,221 +719,6 @@ class MainActivity : FragmentActivity() {
             "ACTION_SUPERUSER" -> navigateLoc = NavigateLocation.SUPERUSER
             "ACTION_MODULES" -> navigateLoc = NavigateLocation.MODULES
             else -> { /* ignore other actions */ }
-        }
-    }
-}
-
-@Composable
-private fun BottomBar(
-    navController: NavHostController,
-    lastValidSelection: MutableState<Int>
-) {
-    val navigator = navController.rememberDestinationsNavigator()
-    val isManager = Natives.isManager
-    val fullFeatured = Natives.isFullFeatured()
-
-    val visibleDestinations = remember(fullFeatured) {
-        BottomBarDestination.entries.filter { fullFeatured || !it.rootRequired }
-    }
-
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route
-
-    val isOnBackStack = visibleDestinations.map { destination ->
-        navController.isRouteOnBackStackAsState(destination.direction).value
-    }
-
-    val selectedIndex = run {
-        val exactMatch = visibleDestinations.indexOfFirst { it.direction.route == currentRoute }
-        if (exactMatch != -1) exactMatch
-        else isOnBackStack.indexOfLast { it }
-    }
-
-    if (selectedIndex != -1) lastValidSelection.value = selectedIndex
-    val effectiveSelectedIndex = if (selectedIndex != -1) selectedIndex else lastValidSelection.value
-
-    // Drag state
-    var isDraggingPill by remember { mutableStateOf(false) }
-    var dragTargetIndex by remember { mutableStateOf(effectiveSelectedIndex) }
-
-    // During drag, animate toward dragTargetIndex; otherwise animate toward effectiveSelectedIndex
-    val animatedSelectedIndex by animateFloatAsState(
-        targetValue = (if (isDraggingPill) dragTargetIndex else effectiveSelectedIndex).toFloat(),
-        animationSpec = if (isDraggingPill) {
-            spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)
-        } else {
-            spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
-        },
-        label = "selectedIndex"
-    )
-
-    fun navigateToIndex(index: Int) {
-        val destination = visibleDestinations.getOrNull(index) ?: return
-        if (destination.direction.route == currentRoute) return
-        navigator.navigate(destination.direction) {
-            popUpTo(NavGraphs.root.startRoute) { saveState = true }
-            launchSingleTop = true
-            restoreState = true
-        }
-    }
-
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                bottom = WindowInsets.navigationBars
-                    .asPaddingValues()
-                    .calculateBottomPadding()
-            )
-    ) {
-        val screenWidth = maxWidth
-        val horizontalScreenPadding = when {
-            screenWidth > 600.dp -> 32.dp
-            screenWidth > 400.dp -> 24.dp
-            else -> 16.dp
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontalScreenPadding, vertical = 14.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Surface(
-                modifier = Modifier.wrapContentWidth(),
-                shape = RoundedCornerShape(24.dp),
-                tonalElevation = 3.dp,
-                shadowElevation = 8.dp
-            ) {
-                val itemSize = 56.dp
-                val itemSpacing = 4.dp
-                val containerPadding = 7.dp
-
-                val navBarWidth = (itemSize * visibleDestinations.size) +
-                        (itemSpacing * (visibleDestinations.size - 1)) +
-                        (containerPadding * 2)
-
-                val density = LocalDensity.current
-                val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
-                val itemSizePx = with(density) { itemSize.toPx() }
-                val itemSpacingPx = with(density) { itemSpacing.toPx() }
-                val containerPaddingPx = with(density) { containerPadding.toPx() }
-
-                Box(
-                    modifier = Modifier
-                        .width(navBarWidth)
-                        .height(72.dp)
-                        .pointerInput(visibleDestinations, effectiveSelectedIndex, isRtl) {
-                            detectDragGestures(
-                                onDragStart = { offset ->
-                                    val extraTouchArea = with(density) { 20.dp.toPx() }
-
-                                    val visualIndex = if (isRtl) visibleDestinations.lastIndex - effectiveSelectedIndex else effectiveSelectedIndex
-
-                                    val pillLeft = containerPaddingPx +
-                                            visualIndex * (itemSizePx + itemSpacingPx) - extraTouchArea
-
-                                    val pillRight = pillLeft + itemSizePx + (extraTouchArea * 2)
-
-                                    if (offset.x in pillLeft..pillRight) {
-                                        isDraggingPill = true
-                                        dragTargetIndex = effectiveSelectedIndex
-                                    }
-                                },
-                                onDragEnd = {
-                                    if (isDraggingPill) {
-                                        navigateToIndex(dragTargetIndex)
-                                        isDraggingPill = false
-                                    }
-                                },
-                                onDragCancel = {
-                                    isDraggingPill = false
-                                },
-                                onDrag = { change, _ ->
-                                    if (isDraggingPill) {
-                                        change.consume()
-                                        // Map finger X to nearest icon index
-                                        val visualIndex = ((change.position.x - containerPaddingPx) /
-                                                (itemSizePx + itemSpacingPx))
-                                            .toInt()
-                                            .coerceIn(0, visibleDestinations.lastIndex)
-                                        dragTargetIndex = if (isRtl) visibleDestinations.lastIndex - visualIndex else visualIndex
-                                    }
-                                }
-                            )
-                        }
-                ) {
-                    var totalWidth by remember { mutableStateOf(0) }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = containerPadding)
-                            .onSizeChanged { totalWidth = it.width }
-                    ) {
-                        // Sliding pill indicator
-                        if (totalWidth > 0 && visibleDestinations.isNotEmpty()) {
-                            val indicatorOffset = (itemSizePx + itemSpacingPx) * animatedSelectedIndex
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .padding(vertical = 8.dp)
-                                    .offset {
-                                        IntOffset(x = indicatorOffset.toInt(), y = 0)
-                                    }
-                                    .width(itemSize)
-                                    // Subtle scale-up when dragging, like iOS
-                                    .graphicsLayer {
-                                        scaleX = if (isDraggingPill) 1.1f else 1f
-                                        scaleY = if (isDraggingPill) 1.1f else 1f
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(itemSize)
-                                        .background(
-                                            color = MaterialTheme.colorScheme.secondaryContainer,
-                                            shape = RoundedCornerShape(16.dp)
-                                        )
-                                )
-                            }
-                        }
-                        // Navigation items
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalArrangement = Arrangement.spacedBy(itemSpacing),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            visibleDestinations.forEachIndexed { index, destination ->
-                                val isSelected = index == (if (isDraggingPill) dragTargetIndex else effectiveSelectedIndex)
-
-                                Box(
-                                    modifier = Modifier
-                                        .size(itemSize)
-                                        .clip(MaterialTheme.shapes.large)
-                                        .clickable {
-                                            if (destination.direction.route == currentRoute) return@clickable
-                                            navigateToIndex(index)
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        if (isSelected) destination.iconSelected else destination.iconNotSelected,
-                                        stringResource(destination.label),
-                                        tint = if (isSelected) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }

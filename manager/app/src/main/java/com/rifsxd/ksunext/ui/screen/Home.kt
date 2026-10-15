@@ -1,7 +1,23 @@
 package com.rifsxd.ksunext.ui.screen
 
+// Visual adaptation of Aster (https://github.com/LyraVoid/Aster), GPL-3.0.
+// Navigation targets, device state and manager actions remain KernelSU Next's.
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.util.AtomicFile
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.ui.graphics.Brush
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.io.File
+import com.rifsxd.ksunext.ui.shell.LocalAsterPanorama
 import androidx.core.net.toUri
-import androidx.compose.foundation.Image
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
@@ -43,18 +59,15 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.verticalScroll
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
@@ -62,9 +75,6 @@ import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.dergoogler.mmrl.ui.component.LabelItem
-import com.dergoogler.mmrl.ui.component.LabelItemDefaults
-import com.dergoogler.mmrl.ui.component.text.TextRow
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.NavGraphs
@@ -76,7 +86,6 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.rifsxd.ksunext.*
 import com.rifsxd.ksunext.R
 import com.rifsxd.ksunext.ui.component.rememberConfirmDialog
-import com.rifsxd.ksunext.ui.theme.ORANGE
 import com.rifsxd.ksunext.ui.util.*
 import com.rifsxd.ksunext.ui.webui.WebUIActivity
 import com.rifsxd.ksunext.ui.util.restartActivity
@@ -113,10 +122,9 @@ fun HomeScreen(navigator: DestinationsNavigator) {
     // Get scroll state for bottom bar tracking
     val bottomBarScrollState = LocalScrollState.current
 
-    val scrollState = LocalScrollState.current
     val navBarEnabled = LocalNavBarEnabled.current
-    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+
+    val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
     
     // Create scroll connection for bottom bar
     val bottomBarScrollConnection = if (bottomBarScrollState != null) {
@@ -174,6 +182,8 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                 Natives.isLkmMode
             }
 
+            if (LocalAsterPanorama.current) AsterHomeScene()
+
             StatusCard(
                 kernelVersion,
                 ksuVersion,
@@ -188,40 +198,26 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             val startRoute = homeDestination?.direction?.route
 
             if (fullFeatured) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        SuperuserCard(
-                            onClick = {
-                                navigator.navigate(SuperUserScreenDestination) {
-                                    popUpTo(NavGraphs.root.startRoute) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                AsterResponsivePair(
+                    first = {
+                        SuperuserCard(onClick = {
+                            navigator.navigate(SuperUserScreenDestination) {
+                                popUpTo(NavGraphs.root.startRoute) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                        )
-                    }
-
-                    Box(modifier = Modifier.weight(1f)) {
-                        ModuleCard(
-                            onClick = {
-                                navigator.navigate(ModuleScreenDestination) {
-                                    popUpTo(NavGraphs.root.startRoute) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                        })
+                    },
+                    second = {
+                        ModuleCard(onClick = {
+                            navigator.navigate(ModuleScreenDestination) {
+                                popUpTo(NavGraphs.root.startRoute) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                        )
+                        })
                     }
-                }
+                )
             }
 
             val currentVersionCode = getManagerVersion(context).second
@@ -288,25 +284,227 @@ fun HomeScreen(navigator: DestinationsNavigator) {
     }
 }
 
+/** Cards stay side by side when each has enough readable space, including font scaling. */
+@Composable
+private fun AsterResponsivePair(first: @Composable () -> Unit, second: @Composable () -> Unit) {
+    val fontScale = LocalDensity.current.fontScale
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        if (maxWidth / fontScale < 300.dp) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                first()
+                second()
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Box(Modifier.weight(1f)) { first() }
+                Box(Modifier.weight(1f)) { second() }
+            }
+        }
+    }
+}
+
+private val homeWallpaperMutex = Mutex()
+
+/** Aster's panoramic hero, with local artwork chosen by the device owner. */
+@Composable
+private fun AsterHomeScene() {
+    val context = LocalContext.current
+    val wallpaper = remember(context) { File(context.filesDir, "aster_home_wallpaper.jpg") }
+    var wallpaperVersion by remember { mutableLongStateOf(wallpaper.lastModified()) }
+    var hasWallpaper by remember { mutableStateOf(wallpaper.isFile) }
+    var menuOpen by remember { mutableStateOf(false) }
+    var importing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                importing = true
+                try {
+                    withContext(Dispatchers.IO) {
+                        homeWallpaperMutex.withLock {
+                            saveHomeWallpaper(context.applicationContext, uri, wallpaper)
+                        }
+                    }
+                    wallpaperVersion = System.currentTimeMillis()
+                    hasWallpaper = true
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    Toast.makeText(context, R.string.aster_home_wallpaper_error, Toast.LENGTH_LONG).show()
+                } finally {
+                    importing = false
+                }
+            }
+        }
+    }
+    val greeting = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+        in 5..11 -> R.string.aster_home_morning
+        in 12..17 -> R.string.aster_home_afternoon
+        else -> R.string.aster_home_evening
+    }
+    val foreground = if (hasWallpaper) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+    Box(
+        modifier = Modifier.fillMaxWidth().heightIn(min = 240.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .background(Brush.linearGradient(listOf(
+                MaterialTheme.colorScheme.primaryContainer,
+                MaterialTheme.colorScheme.secondaryContainer
+            )))
+    ) {
+        if (hasWallpaper) {
+            AsyncImage(
+                model = ImageRequest.Builder(context).data(wallpaper)
+                    .memoryCacheKey("home-wallpaper-$wallpaperVersion")
+                    .diskCacheKey("home-wallpaper-$wallpaperVersion")
+                    .crossfade(true).build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize()
+            )
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(
+                Color.Black.copy(alpha = 0.60f), Color.Black.copy(alpha = 0.82f)
+            ))))
+        } else {
+            Icon(
+                painterResource(R.drawable.ic_ksu_next), contentDescription = null,
+                tint = foreground.copy(alpha = 0.08f),
+                modifier = Modifier.align(Alignment.TopEnd).padding(24.dp).size(128.dp)
+            )
+        }
+        Column(
+            modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth()
+                .padding(start = 22.dp, end = 22.dp, top = 94.dp, bottom = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(stringResource(greeting), color = foreground,
+                style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.app_name), color = foreground,
+                style = MaterialTheme.typography.headlineLarge)
+            Text("${Build.MANUFACTURER.replaceFirstChar { it.titlecase() }} ${Build.MODEL}",
+                color = foreground.copy(alpha = 0.84f), style = MaterialTheme.typography.bodyMedium)
+        }
+        Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) {
+            FilledTonalIconButton(onClick = { menuOpen = true }, enabled = !importing) {
+                if (importing) {
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Filled.Wallpaper, stringResource(R.string.aster_home_appearance))
+                }
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.aster_home_choose_wallpaper)) },
+                    leadingIcon = { Icon(Icons.Filled.PhotoLibrary, contentDescription = null) },
+                    onClick = {
+                        menuOpen = false
+                        picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    }
+                )
+                if (hasWallpaper) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.aster_home_clear_wallpaper)) },
+                        leadingIcon = { Icon(Icons.Filled.DeleteOutline, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            scope.launch {
+                                importing = true
+                                try {
+                                    withContext(Dispatchers.IO) {
+                                        homeWallpaperMutex.withLock {
+                                            currentCoroutineContext().ensureActive()
+                                            AtomicFile(wallpaper).delete()
+                                            check(!wallpaper.exists())
+                                        }
+                                    }
+                                    hasWallpaper = false
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    Toast.makeText(context, R.string.aster_home_wallpaper_error, Toast.LENGTH_LONG).show()
+                                } finally {
+                                    importing = false
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+private suspend fun saveHomeWallpaper(context: Context, uri: Uri, destination: File) {
+    // Bound both the encoded input and decoded dimensions. The picker grant is used only
+    // while importing; reopening Home needs no external-storage access or URI permission.
+    val limit = 24 * 1024 * 1024
+    val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
+        val output = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
+        var count: Int
+        while (input.read(buffer).also { count = it } != -1) {
+            currentCoroutineContext().ensureActive()
+            require(output.size() + count <= limit) { "Wallpaper is too large" }
+            output.write(buffer, 0, count)
+        }
+        output.toByteArray()
+    } ?: error("Cannot read wallpaper")
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    require(bounds.outWidth > 0 && bounds.outHeight > 0) { "Invalid image" }
+    var sample = 1
+    while (maxOf(bounds.outWidth, bounds.outHeight) / sample > 2048) sample *= 2
+    val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        // ImageDecoder applies EXIF orientation, so camera portraits stay upright.
+        ImageDecoder.decodeBitmap(ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes))) { decoder, info, _ ->
+            val ratio = (2048f / maxOf(info.size.width, info.size.height)).coerceAtMost(1f)
+            decoder.setTargetSize(
+                (info.size.width * ratio).toInt().coerceAtLeast(1),
+                (info.size.height * ratio).toInt().coerceAtLeast(1)
+            )
+            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+        }
+    } else {
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size,
+            BitmapFactory.Options().apply { inSampleSize = sample }) ?: error("Cannot decode image")
+    }
+    val atomic = AtomicFile(destination)
+    try {
+        currentCoroutineContext().ensureActive()
+        val stream = atomic.startWrite()
+        try {
+            check(bitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream))
+            currentCoroutineContext().ensureActive()
+            atomic.finishWrite(stream)
+        } catch (error: Exception) {
+            atomic.failWrite(stream)
+            throw error
+        }
+    } finally {
+        bitmap.recycle()
+    }
+}
+
 @Composable
 private fun SuperuserCard(onClick: (() -> Unit)? = null) {
     val count = getSuperuserCount()
     ElevatedCard(
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
         modifier = Modifier
+            .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp),
-            contentAlignment = Alignment.Center
+                .padding(18.dp),
+            contentAlignment = Alignment.CenterStart
         ) {
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
@@ -315,11 +513,12 @@ private fun SuperuserCard(onClick: (() -> Unit)? = null) {
                     } else {
                         stringResource(R.string.home_superuser_count_plural)
                     },
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = count.toString(),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -327,6 +526,7 @@ private fun SuperuserCard(onClick: (() -> Unit)? = null) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ModuleCard(onClick: (() -> Unit)? = null) {
     val count = getModuleCount()
@@ -353,20 +553,22 @@ private fun ModuleCard(onClick: (() -> Unit)? = null) {
 
     ElevatedCard(
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
         modifier = Modifier
+            .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp),
-            contentAlignment = Alignment.Center
+                .padding(18.dp),
+            contentAlignment = Alignment.CenterStart
         ) {
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
@@ -375,13 +577,14 @@ private fun ModuleCard(onClick: (() -> Unit)? = null) {
                     } else {
                         stringResource(R.string.home_module_count_plural)
                     },
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         text = count.toString(),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.SemiBold
                     )
 
@@ -498,9 +701,10 @@ fun UpdateCard() {
                             stringResource(id = R.string.new_version_available, "", newVersionCode)
                         },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.weight(1f)
                     )
-                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = null,
@@ -517,23 +721,20 @@ fun UpdateCard() {
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
                     
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp)
                             .background(
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
                                 shape = RoundedCornerShape(12.dp)
                             )
                             .padding(4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         if (!preferSpoofed) {
                             FilledTonalButton(
                                 onClick = { preferSpoofed = false },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                                 colors = ButtonDefaults.filledTonalButtonColors(
                                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -555,9 +756,7 @@ fun UpdateCard() {
                         } else {
                             FilledTonalButton(
                                 onClick = { preferSpoofed = false },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                                 colors = ButtonDefaults.filledTonalButtonColors(
                                     containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.69f),
                                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
@@ -581,9 +780,7 @@ fun UpdateCard() {
                         if (preferSpoofed) {
                             FilledTonalButton(
                                 onClick = { preferSpoofed = true },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                                 colors = ButtonDefaults.filledTonalButtonColors(
                                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -605,9 +802,7 @@ fun UpdateCard() {
                         } else {
                             FilledTonalButton(
                                 onClick = { preferSpoofed = true },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                                 colors = ButtonDefaults.filledTonalButtonColors(
                                     containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.69f),
                                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
@@ -686,7 +881,7 @@ private fun TopBar(
     ) { }
 
     val context = LocalContext.current
-    TopAppBar(
+    MediumTopAppBar(
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -712,7 +907,9 @@ private fun TopBar(
                 Text(
                     text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Black
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         },
@@ -771,6 +968,7 @@ private fun TopBar(
 }
 
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StatusCard(
     kernelVersionParam: KernelVersion,
@@ -781,191 +979,111 @@ private fun StatusCard(
     ksuVersionTagParam: String? = null,
     onClickInstall: () -> Unit = {}
 ) {
-    val context = LocalContext.current
-
-    ElevatedCard(
-        colors = CardDefaults.elevatedCardColors(containerColor = run {
-            if (ksuVersionParam != null) MaterialTheme.colorScheme.primary
-            else if (kernelVersionParam.isGKI()) MaterialTheme.colorScheme.secondaryContainer
-            else MaterialTheme.colorScheme.errorContainer
-        })
+    val installed = ksuVersionParam != null
+    val background = when {
+        installed -> MaterialTheme.colorScheme.primaryContainer
+        kernelVersionParam.isGKI() -> MaterialTheme.colorScheme.secondaryContainer
+        else -> MaterialTheme.colorScheme.errorContainer
+    }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = background),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
-                    if (ksuVersionParam == null) {
-                        onClickInstall()
-                    }
-                }
-                .padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
-            when {
-                ksuVersionParam != null -> {
-                    val workingMode = if (lkmModeParam == true || lkmModeParam == false) {
-                        val mode = if (lkmModeParam == true) "LKM" else "BUILT-IN"
-                        "$mode (" + kernelVersionParam.getKernelType() + ")"
-                    } else kernelVersionParam.getKernelType()
-
-                    Icon(
-                        imageVector = Icons.Filled.Mood,
-                        contentDescription = null
-                    )
-                    Column(
-                        modifier = Modifier.padding(start = 20.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        val labelStyle = LabelItemDefaults.style
-                        TextRow(
-                            trailingContent = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    LabelItem(
-                                        icon = if (Natives.isSafeMode) {
-                                            {
-                                                Icon(
-                                                    imageVector = Icons.Filled.Security,
-                                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                    contentDescription = null
-                                                )
-                                            }
-                                        } else {
-                                            {
-                                                Icon(
-                                                    imageVector = Icons.Filled.VerifiedUser,
-                                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                    contentDescription = null
-                                                )
-                                            }
-                                        },
-                                        text = {
-                                            Text(
-                                                text = workingMode,
-                                                style = labelStyle.textStyle.copy(
-                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                )
-                                            )
-                                        },
-                                        style = LabelItemDefaults.style.copy(
-                                            containerColor = MaterialTheme.colorScheme.secondaryContainer
-                                        )
-                                    )
-                                    if (isSuCompatDisabled()) {
-                                        LabelItem(
-                                            icon = {
-                                                Icon(
-                                                    imageVector = Icons.Filled.Warning,
-                                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                                    contentDescription = null
-                                                )
-                                            },
-                                            text = {
-                                                Text(
-                                                    text = stringResource(R.string.sucompat_disabled),
-                                                    style = labelStyle.textStyle.copy(
-                                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                                    )
-                                                )
-                                            },
-                                            style = LabelItemDefaults.style.copy(
-                                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                                            )
-                                        )
-                                    }
-                                    if (Natives.isLateLoadMode) {
-                                        LabelItem(
-                                            icon = {
-                                                Icon(
-                                                    imageVector = Icons.Filled.Warning,
-                                                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                                                    contentDescription = null
-                                                )
-                                            },
-                                            text = {
-                                                Text(
-                                                    text = stringResource(R.string.jailbreak_mode),
-                                                    style = labelStyle.textStyle.copy(
-                                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                                    )
-                                                )
-                                            },
-                                            style = LabelItemDefaults.style.copy(
-                                                containerColor = MaterialTheme.colorScheme.errorContainer
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                        ) {
-                            Text(
-                                text = stringResource(id = R.string.home_working),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        val ksuVer = ksuVersionParam ?: 0
-                        val uapiVer = uapiVerParam ?: 0
-                        val tag = if (!ksuVersionTagParam.isNullOrEmpty()) ksuVersionTagParam else "v0.0.0"
-                        val versionText = stringResource(
-                            R.string.home_working_version,
-                            tag,
-                            "$ksuVer-$uapiVer"
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = versionText,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            if (lkmModeParam == true && !Natives.isLkmBundled) {
-                                Spacer(Modifier.width(8.dp))
-                                Surface(
-                                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                                    shape = RoundedCornerShape(4.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.home_lkm_custom),
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                kernelVersionParam.isGKI() -> {
-                    Icon(Icons.Filled.AutoFixHigh, null)
-                    Column(Modifier.padding(start = 20.dp)) {
-                        Text(
-                            text = stringResource(R.string.home_not_installed),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.home_click_to_install),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-
-                else -> {
-                    Icon(Icons.Filled.MoodBad, null)
-                    Column(Modifier.padding(start = 20.dp)) {
-                        Text(
-                            text = stringResource(R.string.home_failure),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.home_failure_tip),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
+                .then(if (!installed) Modifier.clickable(onClick = onClickInstall) else Modifier)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = when {
+                        installed -> Icons.Filled.CheckCircle
+                        kernelVersionParam.isGKI() -> Icons.Filled.AutoFixHigh
+                        else -> Icons.Filled.MoodBad
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = stringResource(when {
+                        installed -> R.string.home_working
+                        kernelVersionParam.isGKI() -> R.string.home_not_installed
+                        else -> R.string.home_failure
+                    }),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f)
+                )
             }
+            if (installed) {
+                val workingMode = if (lkmModeParam != null) {
+                    val mode = if (lkmModeParam) "LKM" else "BUILT-IN"
+                    "$mode (${kernelVersionParam.getKernelType()})"
+                } else kernelVersionParam.getKernelType()
+                // A FlowRow keeps mode and warning labels readable on a narrow sidebar layout.
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    AsterStatusLabel(
+                        workingMode,
+                        if (Natives.isSafeMode) Icons.Filled.Security else Icons.Filled.VerifiedUser,
+                        MaterialTheme.colorScheme.secondaryContainer,
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    if (isSuCompatDisabled()) {
+                        AsterStatusLabel(
+                            stringResource(R.string.sucompat_disabled), Icons.Filled.Warning,
+                            MaterialTheme.colorScheme.tertiaryContainer,
+                            MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
+                    if (Natives.isLateLoadMode) {
+                        AsterStatusLabel(
+                            stringResource(R.string.jailbreak_mode), Icons.Filled.Warning,
+                            MaterialTheme.colorScheme.errorContainer,
+                            MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                    if (lkmModeParam == true && !Natives.isLkmBundled) {
+                        AsterStatusLabel(
+                            stringResource(R.string.home_lkm_custom), Icons.Filled.Extension,
+                            MaterialTheme.colorScheme.tertiaryContainer,
+                            MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
+                }
+                Text(
+                    text = stringResource(
+                        R.string.home_working_version,
+                        ksuVersionTagParam?.takeIf { it.isNotEmpty() } ?: "v0.0.0",
+                        "$ksuVersionParam-${uapiVerParam ?: 0}"
+                    ),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            } else {
+                Text(
+                    text = stringResource(if (kernelVersionParam.isGKI())
+                        R.string.home_click_to_install else R.string.home_failure_tip),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AsterStatusLabel(text: String, icon: ImageVector, background: Color, foreground: Color) {
+    Surface(color = background, contentColor = foreground, shape = RoundedCornerShape(12.dp)) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(15.dp))
+            Text(text, style = MaterialTheme.typography.labelMedium)
         }
     }
 }
@@ -1332,15 +1450,14 @@ private fun ContributorRow(
 ) {
     var imageLoadFailed by remember { mutableStateOf(false) }
 
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         // Avatar + name/role
         Row(
             modifier = Modifier
-                .weight(1f)
+                .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
                 .clickable { onProfileClick() }
                 .padding(vertical = 4.dp, horizontal = 4.dp),
@@ -1388,7 +1505,7 @@ private fun ContributorRow(
             }
 
             // Name + role
-            Column {
+            Column(Modifier.weight(1f)) {
                 Text(
                     text = contributor.name?.takeIf { it.isNotBlank() }
                         ?.let { "${contributor.login} ($it)" }
@@ -1407,7 +1524,7 @@ private fun ContributorRow(
         OutlinedButton(
             onClick = onDonateClick,
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-            modifier = Modifier.height(30.dp),
+            modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp),
             shape = RoundedCornerShape(20.dp),
             border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
@@ -1434,13 +1551,11 @@ fun IssueReportCard() {
     val telegramUrl = stringResource(R.string.issue_report_telegram_link)
 
     Card {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column {
                 Text(
                     text = stringResource(R.string.issue_report_title),
                     style = MaterialTheme.typography.titleMedium,
@@ -1457,7 +1572,7 @@ fun IssueReportCard() {
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(modifier = Modifier.align(Alignment.End), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 IconButton(onClick = { uriHandler.openUri(githubIssueUrl) }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_github),

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">Jó reggelt</string>
+    <string name="aster_home_afternoon">Jó napot</string>
+    <string name="aster_home_evening">Jó estét</string>
+    <string name="aster_home_appearance">Kezdőlap megjelenése</string>
+    <string name="aster_home_choose_wallpaper">Háttérkép kiválasztása</string>
+    <string name="aster_home_clear_wallpaper">Háttérkép eltávolítása</string>
+    <string name="aster_home_wallpaper_error">Nem sikerült frissíteni a háttérképet. Válassz egy olvasható, 24 MB-nál kisebb képet.</string>
+    <string name="aster_search">Keresés</string>
+    <string name="aster_clear_search">Keresés törlése</string>
+    <string name="aster_back">Vissza</string>
+    <string name="aster_kernel_features">Kernelfunkciók</string>
+    <string name="aster_security">Biztonság</string>
+    <string name="aster_app_settings">Alkalmazásbeállítások</string>
+    <string name="aster_panorama">Panorámaelrendezés</string>
+    <string name="aster_panorama_summary">Oldalsó navigáció és háttérképet támogató kezdőlap. Kapcsold ki a szokásos, alsó navigációs elrendezéshez.</string>
+    <string name="aster_navigation_unavailable">Ez az oldal aktív, teljes funkcionalitású KernelSU-telepítést igényel. Ellenőrizd az állapotot a kezdőlapon.</string>
+    <string name="aster_mode_limited">Korlátozott mód</string>
+    <string name="aster_navigation">Navigáció megjelenítése</string>
+    <string name="aster_navigation_summary">A kiválasztott elrendezésnek megfelelő oldalsó vagy alsó navigációs sáv megjelenítése.</string>
+</resources>

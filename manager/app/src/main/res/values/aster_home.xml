@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">Good morning</string>
+    <string name="aster_home_afternoon">Good afternoon</string>
+    <string name="aster_home_evening">Good evening</string>
+    <string name="aster_home_appearance">Home appearance</string>
+    <string name="aster_home_choose_wallpaper">Choose wallpaper</string>
+    <string name="aster_home_clear_wallpaper">Remove wallpaper</string>
+    <string name="aster_home_wallpaper_error">Could not update wallpaper. Choose a readable image smaller than 24 MB.</string>
+</resources>

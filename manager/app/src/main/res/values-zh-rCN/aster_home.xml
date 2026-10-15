@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aster_home_morning">早上好</string>
+    <string name="aster_home_afternoon">下午好</string>
+    <string name="aster_home_evening">晚上好</string>
+    <string name="aster_home_appearance">首页外观</string>
+    <string name="aster_home_choose_wallpaper">选择壁纸</string>
+    <string name="aster_home_clear_wallpaper">移除壁纸</string>
+    <string name="aster_home_wallpaper_error">无法更新壁纸，请选择小于 24 MB 的可读取图片。</string>
+</resources>
