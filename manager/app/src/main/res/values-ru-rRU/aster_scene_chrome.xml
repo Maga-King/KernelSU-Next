@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_appearance">Внешний вид главного экрана</string>
+    <string name="home_scene_clock_style_stacked">Время в две строки</string>
+    <string name="home_scene_clock_style_stacked_summary">Часы над минутами — так, как всегда отображалось на боковой панели.</string>
+    <string name="home_scene_clock_style_inline">Время в одну строку</string>
+    <string name="home_scene_clock_style_inline_summary">Время одной строкой, дата под ним.</string>
+    <string name="home_scene_clock_style_analog">Циферблат</string>
+    <string name="home_scene_clock_style_analog_summary">Аналоговый циферблат вместо цифр.</string>
+    <string name="home_scene_clock_style_date">Только дата</string>
+    <string name="home_scene_clock_style_date_summary">День недели и дата, без времени.</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">Стиль главного экрана</string>
+    <string name="global_layout_panorama">Панорама</string>
+    <string name="global_layout_panorama_summary">Сцена с обоями на главной, плавающая навигация на остальных страницах.</string>
+    <string name="global_layout_standard">Стандартный</string>
+    <string name="global_layout_standard_summary">Классическая нижняя панель или боковое меню на каждой странице.</string>
+</resources>

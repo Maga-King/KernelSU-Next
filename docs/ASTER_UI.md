@@ -1,53 +1,86 @@
-# Aster UI adaptation
+# Aster UI source port
 
-KernelSU-Next now offers two layouts under **Settings → Customization → Panoramic layout**:
+This branch transplants UI source from [lyravoid/Aster](https://github.com/lyravoid/Aster),
+revision [`84a9116606b01e436e9b58852acee9e8b9b9e627`](https://github.com/lyravoid/Aster/tree/84a9116606b01e436e9b58852acee9e8b9b9e627),
+onto KernelSU Next. Both repositories use GPL-3.0. Original source comments are retained;
+credit also belongs to Miuix and the FolkPatch-derived floating navigation components.
 
-- **On (default):** a side navigation rail and a panoramic Home with optional personal wallpaper.
-- **Off:** a labelled floating bottom navigation bar and a compact Home without the wallpaper hero.
+## UI source and adaptation boundaries
 
-The choice applies immediately and is saved across restarts. Use the wallpaper button on the
-panoramic Home to choose or clear an image. Images are resized and copied into private app storage;
-no storage permission is required. Standard mode keeps the chosen wallpaper for the next switch.
+- `ui/home/AsterHomeScene.kt` extracts Aster's HomeScenePanel, SceneHero, greeting, status
+  columns, status heading, actions/reboot sheets and wallpaper appearance controls. The
+  original geometry, wallpaper gradient, parallax, landscape split and Miuix widgets remain.
+  `AsterHomeState` supplies KernelSU data instead of APatch capabilities.
+- `ui/shell/HomeSceneChrome.kt` contains Aster's clock, battery, scene rail and blurred backdrop.
+- `ui/home/HomeWallpaper*` preserves Aster's day/night slots, private image storage, crop and
+  crossfade. Coil imports are adapted to the manager's existing Coil 2 image loader. A wallpaper
+  selected in the earlier preview migrates automatically, with the original retained as backup.
+- `ui/component/FloatingBottomBar.kt`, its drag/highlight helpers and shell navigation components
+  come from Aster. Standard mode uses Miuix bottom navigation; panorama uses the scene rail on
+  Home and the floating capsule on other primary pages. Detail pages have no primary navigation.
+- Theme seed, wallpaper palette extraction and palette specification code come from Aster.
+  Miuix supplies the actual theme; existing KSUN detail screens receive matching Material colors.
+- Settings uses Aster's grouped preferences and navigation components, connected to KSUN options.
+- Primary transitions use Aster's EaseInOut curve and distance-based duration. Detail transitions
+  retain its separate slide (400 ms), fade (300 ms), and scale (500 ms) tracks. Rail and floating
+  navigation translate and fade with the Home transition. KSUN's NavHost and route handling remain;
+  this does not replace them with Aster's persistent primary-page Pager.
 
-Home, Superuser, Modules and Settings share rounded cards, quieter surfaces and revised typography.
-Module actions wrap on narrow screens. Navigation remains visible on primary pages; detail pages
-and installation logs use the full screen. Unavailable root tabs explain their requirements when
-tapped. Existing KernelSU operations, package identity, app lock and signing configuration remain
-in the KernelSU-Next implementation.
+Root authorization, module management, installation, native code, daemon commands, kernel
+features, app lock and intent handling remain KernelSU Next implementations. APatch's backend,
+KernelPatch probes and separate KPM/APM management are not imported. UI labels describe KSUN's
+actual state. Existing warnings and protected installation conditions remain in place.
 
-## Attribution and implementation
+Both layouts are retained and can be switched in Settings. Home appearance also offers the
+layout choice, wallpaper controls and clock styles. No screenshot wallpaper or third-party font
+is bundled. The preview retains the user's existing selected wallpaper.
 
-UI reference: [LyraVoid/Aster](https://github.com/LyraVoid/Aster), revision
-[`84a9116606b01e436e9b58852acee9e8b9b9e627`](https://github.com/LyraVoid/Aster/tree/84a9116606b01e436e9b58852acee9e8b9b9e627).
-In particular, `ui/shell/AsterAppShell.kt`, `ui/shell/HomeSceneChrome.kt`, the Home layout,
-theme and grouped settings informed this adaptation. Credit belongs to Aster's contributors and
-the Miuix project for the original visual design. Both projects' root licenses are GPL-3.0;
-the existing repository license applies to this adaptation.
+## Build
 
-This is an adaptation of Aster's visual layout onto the existing Android Compose/Material3
-components. It does not import APatch/KernelPatch code or require Aster's newer Kotlin/Miuix
-toolchain. It does not copy the third-party wallpaper or custom font shown in Aster's screenshots.
-Aster-specific KPM/APM entries are represented by KernelSU-Next's own Superuser and Modules pages.
-Advanced Aster options such as downloadable fonts, alternate launch icons and wallpaper-derived
-palettes are not included.
+The real Miuix 0.9.3 source API requires a newer toolchain: compile SDK 37, AGP 9.1.1,
+Gradle 9.3.1, Kotlin 2.4.10 and Compose BOM 2026.08.00. The native toolchain remains NDK 29.
+Target SDK and native manager behavior are not changed for this UI migration.
 
-## Validation
+`./gradlew :app:assemblePreview` builds `com.rifsxd.ksunext.aster.preview` with the local Android
+debug key and label **Aster UI Preview** (**Aster 预览版**). It updates the previous preview
+without replacing the normal manager. Launcher shortcuts target this separate package.
+The preview enables the release R8 and resource optimizations and is not debuggable. Its signing
+certificate remains the local debug certificate so updates preserve the preview's data.
 
-UI/resource compilation: `cd manager && ./gradlew :app:compileDebugKotlin`.
-Static Android checks: `./gradlew :app:lintDebug`.
+Automatic Root requests and installation entry points remain enabled, as requested. The local
+UI preview does not bundle the daemon/kernel installation assets and is not a full manager
+release. A complete functional release requires the repository's normal ksud/kernel asset build
+and a signing identity accepted by the kernel. No official private signing key is available here.
 
-Local resource, KSP, Kotlin and Java compilation and `lintDebug` passed on 2026-10-15 with
-JDK 21 and Gradle 9.2.0. Lint has no Error/Fatal findings; existing warning-level findings remain.
-The 19 new strings are present in all 23 existing translation folders.
-A local, untracked Gradle init script selected the installed Windows NDK 28.2 for UI-only checks
-to avoid downloading a native toolchain. Tracked builds still use NDK 29.0.14206865. No native
-compilation, signed APK packaging or on-device verification is implied by those results.
+## Startup and rendering
 
-These checks do not validate an installed APK or root operations. A complete APK still requires
-the repository's normal ksud/native build and its configured release signing. Do not substitute
-an old daemon binary when packaging this UI.
+The decorative rotating startup overlay is removed. The normal Android launch window remains,
+and pending installation/navigation intents still wait for the existing application lock.
+Wallpaper initialization is distinct from an empty selection, preventing a transient image-picker
+prompt and premature clearing of the saved theme seed. Wallpaper crossfades read animation state
+in the graphics layer; theme and shell observe only the palette fields they actually render.
 
-Device review should cover both layouts, switching and restart persistence, light/dark/AMOLED,
-Chinese/English, large fonts, landscape, returning Home from each tab, scrolling to the final
-setting/module action, wallpaper choose/replace/clear, app lock and existing deep links. No
-connected online device was available during the initial adaptation.
+Initial Root shell acquisition, module counts, and module-update HTTP checks run outside UI
+composition/on IO. Automatic Root requests and the original KSUN authorization checks remain.
+The manager-only daemon installation order is unchanged. Dark mode bridges Material's content
+foreground into the Miuix shell so legacy cards retain readable text.
+
+## Verification
+
+Device verification uses the side-by-side preview on OnePlus PJZ110 (Android 17, 120 Hz).
+`assemblePreview` and `lintPreview` passed (zero lint errors; existing warnings remain).
+Cold-start recording showed the saved wallpaper without the empty-image selection prompt.
+Appearance, nested clock and quote dialogs, Settings appearance details, and the layout dialog
+in both panorama and standard mode were opened and dismissed without a process crash. The
+saved wallpaper and custom quote remained. Dark-mode issue/contributor cards were visually checked.
+
+On the optimized preview, eight Home/Settings round trips recorded 613 frames, 23 janky (3.75%),
+p95 29 ms and p99 40 ms. Five appearance-sheet open/close cycles recorded 455 frames,
+16 janky (3.52%), p95 14 ms and p99 21 ms. These are Android `dumpsys gfxinfo` samples,
+not an FPS estimate or a controlled official-Aster benchmark. The previous debug sample was
+514 frames, 46 janky (8.95%), p95 61 ms and p99 150 ms; build mode and animation changes
+mean the samples do not isolate one individual optimization.
+
+Root, flashing, module mutation and reboot operations were not executed in this UI-only preview.
+The preview signature remains SHA-256
+`47f1bf86449c4d3021dad441982204c0f8531fdc388e1251ecb31fb9d04a3a4c`.

@@ -42,7 +42,14 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.rifsxd.ksunext.ksuApp
 import com.rifsxd.ksunext.Natives
 import com.rifsxd.ksunext.R
-import com.rifsxd.ksunext.ui.component.SearchAppBar
+import com.rifsxd.ksunext.ui.component.AsterListTopBar
+import top.yukonga.miuix.kmp.basic.Card as AsterCard
+import top.yukonga.miuix.kmp.basic.Text as AsterText
+import top.yukonga.miuix.kmp.basic.Scaffold as AsterScaffold
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.icon.basic.ArrowRight
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import com.rifsxd.ksunext.ui.viewmodel.SuperUserViewModel
 import kotlinx.coroutines.launch
 
@@ -52,7 +59,7 @@ import kotlinx.coroutines.launch
 fun SuperUserScreen(navigator: DestinationsNavigator) {
     val viewModel = viewModel<SuperUserViewModel>()
     val scope = rememberCoroutineScope()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = MiuixScrollBehavior()
     val listState = rememberLazyListState()
     // Bottom bar scroll tracking
     val bottomBarScrollState = LocalScrollState.current
@@ -72,17 +79,10 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
         }
     }
 
-    Scaffold(
+    AsterScaffold(
         topBar = {
-            SearchAppBar(
-                largeTitle = true,
-                title = {
-                    Text(
-                        text = stringResource(R.string.superuser),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
+            AsterListTopBar(
+                title = stringResource(R.string.superuser),
                 searchText = viewModel.search,
                 onSearchTextChange = { viewModel.search = it },
                 onClearClick = { viewModel.search = "" },
@@ -163,11 +163,11 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
                             modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
                         }
                     },
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(
-                    start = 16.dp,
-                    top = 16.dp,
-                    end = 16.dp,
+                    start = 12.dp,
+                    top = 8.dp,
+                    end = 12.dp,
                     bottom = 16.dp + navBarPadding
                 )
             ) {
@@ -184,101 +184,61 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
     }
 }
 
+// Adapted directly from Aster SuperUserAppItem; profile editing stays with KernelSU.
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun AppItem(
-    app: SuperUserViewModel.AppInfo,
-    onClickListener: () -> Unit,
-) {
+private fun AppItem(app: SuperUserViewModel.AppInfo, onClickListener: () -> Unit) {
     val context = LocalContext.current
-    val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-    val developerOptionsEnabled = prefs.getBoolean("enable_developer_options", false)
-
-    Card(
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
-            .clickable(onClick = onClickListener)
+    val developerOptionsEnabled = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        .getBoolean("enable_developer_options", false)
+    AsterCard(
+        modifier = Modifier.fillMaxWidth(),
+        pressFeedbackType = PressFeedbackType.Sink,
+        showIndication = false,
+        onClick = onClickListener,
     ) {
-        ListItem(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            headlineContent = {
-                Text(
-                    text = app.label,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context).data(app.packageInfo).crossfade(true).build(),
+                    contentDescription = app.label,
+                    modifier = Modifier.padding(4.dp).size(48.dp),
                 )
-            },
-            supportingContent = {
-                Column {
-                    Text(
-                        text = app.displayIdentifier,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
+                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                    AsterText(text = app.label, style = MiuixTheme.textStyles.body1,
+                        fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    AsterText(text = app.displayIdentifier, style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 1)
+                    FlowRow(Modifier.padding(top = 2.dp)) {
                         if (app.allowSu) {
-                            val rootLabel = if (developerOptionsEnabled) {
-                                "ROOT | UID: ${app.uid}"
-                            } else {
-                                "ROOT"
-                            }
-                            LabelItem(
-                                text = rootLabel,
-                            )
-                        } else {
-                            if (Natives.uidShouldUmount(app.uid)) {
-                                LabelItem(
-                                    text = "UMOUNT",
-                                    style = LabelItemDefaults.style.copy(
-                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                    )
-                                )
-                            }
+                            AsterStatusBadge(if (developerOptionsEnabled) "ROOT | UID: ${app.uid}" else "ROOT")
+                        } else if (Natives.uidShouldUmount(app.uid)) {
+                            AsterStatusBadge("UMOUNT")
                         }
-                        if (app.hasCustomProfile) {
-                            LabelItem(
-                                text = "CUSTOM",
-                                style = LabelItemDefaults.style.copy(
-                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                                )
-                            )
-                        } else if (!app.allowSu && !Natives.uidShouldUmount(app.uid)) {
-                            LabelItem(
-                                text = "DEFAULT",
-                                style = LabelItemDefaults.style.copy(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                )
-                            )
-                        }
+                        if (app.hasCustomProfile) AsterStatusBadge("CUSTOM")
+                        else if (!app.allowSu && !Natives.uidShouldUmount(app.uid)) AsterStatusBadge("DEFAULT")
                     }
                 }
-            },
-            leadingContent = {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(app.packageInfo)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = app.label,
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .width(48.dp)
-                        .height(48.dp)
+                // The existing app-profile page owns authorization writes and confirmation.
+                top.yukonga.miuix.kmp.basic.Icon(
+                    imageVector = top.yukonga.miuix.kmp.icon.MiuixIcons.Basic.ArrowRight,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.size(20.dp),
                 )
-            },
-        )
+            }
+        }
+    }
+}
+
+// Aster's StatusBadge, with KernelSU's original status vocabulary.
+@Composable
+private fun AsterStatusBadge(label: String) {
+    Box(Modifier.padding(top = 4.dp, end = 4.dp)
+        .background(MiuixTheme.colorScheme.tertiaryContainer, RoundedCornerShape(4.dp))) {
+        AsterText(text = label, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+            color = MiuixTheme.colorScheme.onTertiaryContainer, fontSize = 9.sp,
+            fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
     }
 }
 

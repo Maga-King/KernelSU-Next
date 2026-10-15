@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="settings_section_appearance">모양</string>
+    <string name="settings_section_navigation">내비게이션 및 셸</string>
+    <string name="settings_section_kernel">커널</string>
+    <string name="settings_section_general">일반</string>
+</resources>

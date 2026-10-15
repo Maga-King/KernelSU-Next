@@ -1,7 +1,8 @@
-@file:Suppress("UnstableApiUsage")
+@file:Suppress("UnstableApiUsage", "DEPRECATION")
 
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import com.android.build.gradle.tasks.PackageAndroidArtifact
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.agp.app)
@@ -26,6 +27,19 @@ android {
     namespace = "com.rifsxd.ksunext"
 
     buildTypes {
+        create("preview") {
+            initWith(getByName("debug"))
+            // Measure the Aster UI with release optimizations while keeping the
+            // preview install identity and certificate for in-place upgrades.
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("debug")
+            applicationIdSuffix = ".aster.preview"
+            versionNameSuffix = "-aster-preview"
+            matchingFallbacks += "debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -38,10 +52,6 @@ android {
         buildConfig = true
         compose = true
         prefab = true
-    }
-
-    kotlinOptions {
-        jvmTarget = "21"
     }
 
     packaging {
@@ -95,6 +105,12 @@ android {
 
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_21
+    }
+}
+
 ksp {
     arg("compose-destinations.defaultTransitions", "none")
 }
@@ -115,6 +131,7 @@ tasks.named("preBuild") {
 
 dependencies {
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.fragment)
     implementation(libs.androidx.navigation.compose)
 
     implementation(platform(libs.androidx.compose.bom))
@@ -154,6 +171,12 @@ dependencies {
     implementation(libs.androidx.webkit)
 
     implementation(libs.lsposed.cxx)
+
+    implementation(libs.miuix.ui)
+    implementation(libs.miuix.icons)
+    implementation(libs.miuix.preference)
+    implementation(libs.backdrop)
+    implementation(libs.capsule)
 
     implementation(libs.mmrl.ui)
     implementation("androidx.biometric:biometric:1.2.0-alpha05")

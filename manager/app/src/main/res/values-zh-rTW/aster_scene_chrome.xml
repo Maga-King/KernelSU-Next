@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="home_appearance">首頁外觀</string>
+    <string name="home_scene_clock_style_stacked">兩行數字</string>
+    <string name="home_scene_clock_style_stacked_summary">小時在上、分鐘在下，和側欄一直以來的樣子一樣。</string>
+    <string name="home_scene_clock_style_inline">單行數字</string>
+    <string name="home_scene_clock_style_inline_summary">一行時間，下面一行日期。</string>
+    <string name="home_scene_clock_style_analog">指針式</string>
+    <string name="home_scene_clock_style_analog_summary">用錶面代替數字。</string>
+    <string name="home_scene_clock_style_date">僅日期</string>
+    <string name="home_scene_clock_style_date_summary">只顯示星期和日期，不顯示時間。</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">首頁風格</string>
+    <string name="global_layout_panorama">全景首頁</string>
+    <string name="global_layout_panorama_summary">首頁是壁紙場景，其他頁面使用懸浮導覽。</string>
+    <string name="global_layout_standard">標準首頁</string>
+    <string name="global_layout_standard_summary">所有頁面使用傳統的底部導覽或側欄導覽。</string>
+</resources>

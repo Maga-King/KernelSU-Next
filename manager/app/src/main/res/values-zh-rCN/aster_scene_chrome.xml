@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="home_appearance">首页外观</string>
+    <string name="home_scene_clock_style_stacked">两行数字</string>
+    <string name="home_scene_clock_style_stacked_summary">小时在上、分钟在下，和侧栏一直以来的样子一样。</string>
+    <string name="home_scene_clock_style_inline">单行数字</string>
+    <string name="home_scene_clock_style_inline_summary">一行时间，下面一行日期。</string>
+    <string name="home_scene_clock_style_analog">指针式</string>
+    <string name="home_scene_clock_style_analog_summary">用表盘代替数字。</string>
+    <string name="home_scene_clock_style_date">仅日期</string>
+    <string name="home_scene_clock_style_date_summary">只显示星期和日期，不显示时间。</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">首页风格</string>
+    <string name="global_layout_panorama">全景首页</string>
+    <string name="global_layout_panorama_summary">首页是壁纸场景，其他页面使用悬浮导航。</string>
+    <string name="global_layout_standard">标准首页</string>
+    <string name="global_layout_standard_summary">所有页面使用传统的底部导航或侧栏导航。</string>
+</resources>

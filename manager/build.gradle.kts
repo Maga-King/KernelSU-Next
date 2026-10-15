@@ -29,7 +29,7 @@ cmaker {
 
 val androidMinSdkVersion = 26
 val androidTargetSdkVersion = 36
-val androidCompileSdkVersion = 36
+val androidCompileSdkVersion = 37
 val androidBuildToolsVersion = "36.1.0"
 val androidCompileNdkVersion by extra(libs.versions.ndk.get())
 val androidSourceCompatibility = JavaVersion.VERSION_21
@@ -63,24 +63,24 @@ subprojects {
             compileSdk = androidCompileSdkVersion
             ndkVersion = androidCompileNdkVersion
 
-            defaultConfig {
+            defaultConfig.apply {
                 minSdk = androidMinSdkVersion
                 if (this is ApplicationDefaultConfig) {
                     targetSdk = androidTargetSdkVersion
                     versionCode = managerVersionCode
                     versionName = managerVersionName
                 }
-                ndk {
+                ndk.apply {
                     abiFilters += listOf("arm64-v8a", "x86_64", "riscv64")
                 }
             }
 
-            lint {
+            lint.apply {
                 abortOnError = true
                 checkReleaseBuilds = false
             }
 
-            compileOptions {
+            compileOptions.apply {
                 sourceCompatibility = androidSourceCompatibility
                 targetCompatibility = androidTargetCompatibility
             }

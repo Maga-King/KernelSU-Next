@@ -17,6 +17,12 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
 import com.rifsxd.ksunext.ui.shell.LocalAsterPanorama
+import com.rifsxd.ksunext.ui.shell.LocalHomeSceneHostState
+import com.rifsxd.ksunext.ui.home.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.core.net.toUri
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.foundation.BorderStroke
@@ -105,7 +111,7 @@ import kotlinx.coroutines.withContext
 @Destination<RootGraph>(start = true)
 @Composable
 fun HomeScreen(navigator: DestinationsNavigator) {
-    val kernelVersion = getKernelVersion()
+    val kernelVersion = remember { getKernelVersion() }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     val isManager = Natives.isManager
@@ -136,67 +142,82 @@ fun HomeScreen(navigator: DestinationsNavigator) {
         )
     } else null
 
-    Scaffold(
-        topBar = {
-            TopBar(
-                kernelVersion,
-                ksuVersion,
-                onInstallClick = {
-                    navigator.navigate(InstallScreenDestination)
-                },
-                onSettingsClick = {
-                    navigator.navigate(SettingScreenDestination) {
-                        popUpTo(NavGraphs.root.startRoute) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                navBarEnabled = LocalNavBarEnabled.current?.value ?: true,
-                scrollBehavior = scrollBehavior
-            )
+    val lkmMode = ksuVersion?.let { Natives.isLkmMode }
+    val panorama = LocalAsterPanorama.current
+    val wallpaperViewModel: HomeWallpaperViewModel = LocalHomeWallpaperViewModel.current ?: viewModel()
+    val wallpaperState by wallpaperViewModel.uiState.collectAsStateWithLifecycle()
+    var showWallpaperSheet by rememberSaveable { mutableStateOf(false) }
+    var showTools by rememberSaveable { mutableStateOf(false) }
+    var showSceneReboot by rememberSaveable { mutableStateOf(false) }
+    var pendingDangerousReboot by rememberSaveable { mutableStateOf<String?>(null) }
+    val dangerousRebootDialog = rememberConfirmDialog(
+        onConfirm = {
+            pendingDangerousReboot?.let { reboot(it) }
+            pendingDangerousReboot = null
         },
-        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                // Chain scroll connections - bottom bar tracking first, then topbar behavior
-                .let { modifier ->
-                    if (bottomBarScrollConnection != null) {
-                        modifier
-                            .nestedScroll(bottomBarScrollConnection)
-                            .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    } else {
-                        modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-                    }
-                }
-                .verticalScroll(rememberScrollState())
-                .padding(top = 16.dp)
-                .padding(bottom = navBarPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            val lkmMode = ksuVersion?.let {
-                Natives.isLkmMode
+        onDismiss = { pendingDangerousReboot = null },
+    )
+    val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager?
+    @Suppress("DEPRECATION")
+    val supportsUserspaceReboot = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+        powerManager?.isRebootingUserspaceSupported == true
+    var wallpaperPickerSlot by remember { mutableStateOf(HomeWallpaperSlot.LIGHT) }
+    val wallpaperPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) wallpaperViewModel.importImage(uri, wallpaperPickerSlot)
+    }
+    val sceneHost = LocalHomeSceneHostState.current
+    DisposableEffect(sceneHost) {
+        sceneHost?.openAppearance = { showWallpaperSheet = true }
+        onDispose { sceneHost?.openAppearance = null }
+    }
+    LaunchedEffect(panorama, wallpaperState.phase) {
+        if (panorama && wallpaperState.hasImage && wallpaperState.phase == HomeWallpaperPhase.DISABLED) {
+            wallpaperViewModel.setEnabled(true)
+        }
+    }
+    LaunchedEffect(wallpaperViewModel) {
+        wallpaperViewModel.events.collect {
+            Toast.makeText(context, R.string.aster_home_wallpaper_error, Toast.LENGTH_LONG).show()
+        }
+    }
+    val installed = ksuVersion != null
+    val hasRoot = installed && rootAvailable()
+    val sceneState = AsterHomeState(
+        title = stringResource(when {
+            installed && !hasRoot -> R.string.grant_root_failed
+            installed -> R.string.home_working
+            kernelVersion.isGKI() -> R.string.home_not_installed
+            else -> R.string.home_failure
+        }),
+        summary = if (installed && hasRoot) "" else stringResource(
+            if (installed) R.string.grant_root_failed
+            else if (kernelVersion.isGKI()) R.string.home_click_to_install else R.string.home_failure_tip
+        ),
+        installed = installed,
+        needsAccess = installed && !hasRoot,
+        firstLabel = "KernelSU",
+        firstValue = if (installed) "${ksuVersionTag ?: ksuVersion}" else stringResource(R.string.home_not_installed),
+        secondLabel = stringResource(R.string.aster_scene_mode),
+        secondValue = when {
+            !installed -> stringResource(R.string.unavailable)
+            Natives.isLateLoadMode -> stringResource(R.string.jailbreak_mode)
+            Natives.isSafeMode -> stringResource(R.string.safe_mode)
+            lkmMode == true -> "LKM"
+            else -> "Built-in"
+        },
+        deviceName = "${Build.MANUFACTURER.replaceFirstChar { it.titlecase() }} ${Build.MODEL}",
+    )
+    val homeContent: @Composable () -> Unit = {
+            if (installed && isSuCompatDisabled()) {
+                WarningCard(stringResource(R.string.sucompat_disabled), MaterialTheme.colorScheme.tertiary)
             }
-
-            if (LocalAsterPanorama.current) AsterHomeScene()
-
-            StatusCard(
-                kernelVersion,
-                ksuVersion,
-                kernelUAPIVersion,
-                lkmMode,
-                ksuVersionTagParam = ksuVersionTag
-            ) {
-                navigator.navigate(InstallScreenDestination)
+            if (installed && lkmMode == true && !Natives.isLkmBundled) {
+                AsterStatusLabel(
+                    stringResource(R.string.home_lkm_custom), Icons.Filled.Extension,
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    MaterialTheme.colorScheme.onTertiaryContainer,
+                )
             }
-
-            val homeDestination = BottomBarDestination.entries.firstOrNull()
-            val startRoute = homeDestination?.direction?.route
-
             if (fullFeatured) {
                 AsterResponsivePair(
                     first = {
@@ -220,7 +241,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                 )
             }
 
-            val currentVersionCode = getManagerVersion(context).second
+            val currentVersionCode = remember(context) { getManagerVersion(context).second }
             val requiresNewKernel = isManager && kernelUAPIVersion != null && managerUAPIVersion > kernelUAPIVersion
             val requiresNewManager = isManager && kernelUAPIVersion != null && managerUAPIVersion < kernelUAPIVersion
 
@@ -280,6 +301,124 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             IssueReportCard()
             ContributorsCard()
             Spacer(Modifier)
+    }
+    AsterHomeWallpaperSheet(
+        show = showWallpaperSheet,
+        state = wallpaperState,
+        onDismissRequest = { showWallpaperSheet = false },
+        onNightEnabledChange = wallpaperViewModel::setNightEnabled,
+        onChooseImage = { slot ->
+            wallpaperPickerSlot = slot
+            wallpaperPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        },
+        onRemoveImage = wallpaperViewModel::removeImage,
+        onCropChange = { slot, crop -> wallpaperViewModel.saveCrop(crop, slot) },
+        onRegenerateColor = wallpaperViewModel::regenerateColors,
+    )
+    if (panorama) {
+        val feedbackUrl = stringResource(R.string.issue_report_github_link)
+        val downloadTitle = stringResource(R.string.reboot_download)
+        val edlTitle = stringResource(R.string.reboot_edl)
+        val downloadConfirmation = stringResource(R.string.reboot_download_confirm)
+        val edlConfirmation = stringResource(R.string.reboot_edl_confirm)
+        val rebootText = stringResource(R.string.reboot)
+        AsterHomeScene(
+            state = sceneState,
+            wallpaperState = wallpaperState,
+            onTools = { showTools = true },
+            onAppearance = { showWallpaperSheet = true },
+            onRefresh = { restartActivity(context) },
+        ) {
+            if (!installed) {
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = { navigator.navigate(InstallScreenDestination) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary(),
+                ) { top.yukonga.miuix.kmp.basic.Text(stringResource(R.string.install)) }
+            }
+            homeContent()
+        }
+        AsterHomeActionsSheet(
+            showMore = showTools,
+            showReboot = showSceneReboot,
+            onShowMoreChange = { showTools = it },
+            onShowRebootChange = { showSceneReboot = it },
+            canReboot = installed,
+            supportsUserspaceReboot = supportsUserspaceReboot,
+            canUninstall = false,
+            onUninstallClick = {},
+            onInstallClick = { showTools = false; navigator.navigate(InstallScreenDestination) },
+            onFeedback = { context.startActivity(Intent(Intent.ACTION_VIEW, feedbackUrl.toUri())) },
+            onAbout = { showTools = false; navigator.navigate(SettingScreenDestination) },
+            onReboot = { reboot(if (it == "soft_reboot") "soft-reboot" else it) },
+            onDangerousReboot = { reason ->
+                pendingDangerousReboot = reason
+                val download = reason == "download"
+                dangerousRebootDialog.showConfirm(
+                    title = if (download) downloadTitle else edlTitle,
+                    content = if (download) downloadConfirmation else edlConfirmation,
+                    confirm = rebootText,
+                )
+            },
+        )
+        return
+    }
+
+    Scaffold(
+        topBar = {
+            TopBar(
+                kernelVersion,
+                ksuVersion,
+                onInstallClick = {
+                    navigator.navigate(InstallScreenDestination)
+                },
+                onSettingsClick = {
+                    navigator.navigate(SettingScreenDestination) {
+                        popUpTo(NavGraphs.root.startRoute) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                navBarEnabled = LocalNavBarEnabled.current?.value ?: true,
+                scrollBehavior = scrollBehavior
+            )
+        },
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                // Chain scroll connections - bottom bar tracking first, then topbar behavior
+                .let { modifier ->
+                    if (bottomBarScrollConnection != null) {
+                        modifier
+                            .nestedScroll(bottomBarScrollConnection)
+                            .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    } else {
+                        modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                    }
+                }
+                .verticalScroll(rememberScrollState())
+                .padding(top = 16.dp)
+                .padding(bottom = navBarPadding)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            AsterStandardStatusCard(
+                title = sceneState.title,
+                subtitle = sceneState.summary.takeIf { it.isNotBlank() }
+                    ?: stringResource(R.string.home_working_version, ksuVersionTag ?: "", "${ksuVersion ?: 0}-${kernelUAPIVersion ?: 0}"),
+                mode = sceneState.secondValue,
+                isWorking = sceneState.installed && !sceneState.needsAccess,
+                icon = Icons.Filled.Lock,
+                iconColor = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary.copy(alpha = 0.22f),
+                cardColor = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primaryContainer,
+                onClick = { if (!installed) navigator.navigate(InstallScreenDestination) },
+            )
+
+            homeContent()
         }
     }
 }
@@ -303,243 +442,42 @@ private fun AsterResponsivePair(first: @Composable () -> Unit, second: @Composab
     }
 }
 
-private val homeWallpaperMutex = Mutex()
-
-/** Aster's panoramic hero, with local artwork chosen by the device owner. */
-@Composable
-private fun AsterHomeScene() {
-    val context = LocalContext.current
-    val wallpaper = remember(context) { File(context.filesDir, "aster_home_wallpaper.jpg") }
-    var wallpaperVersion by remember { mutableLongStateOf(wallpaper.lastModified()) }
-    var hasWallpaper by remember { mutableStateOf(wallpaper.isFile) }
-    var menuOpen by remember { mutableStateOf(false) }
-    var importing by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) {
-            scope.launch {
-                importing = true
-                try {
-                    withContext(Dispatchers.IO) {
-                        homeWallpaperMutex.withLock {
-                            saveHomeWallpaper(context.applicationContext, uri, wallpaper)
-                        }
-                    }
-                    wallpaperVersion = System.currentTimeMillis()
-                    hasWallpaper = true
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Exception) {
-                    Toast.makeText(context, R.string.aster_home_wallpaper_error, Toast.LENGTH_LONG).show()
-                } finally {
-                    importing = false
-                }
-            }
-        }
-    }
-    val greeting = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
-        in 5..11 -> R.string.aster_home_morning
-        in 12..17 -> R.string.aster_home_afternoon
-        else -> R.string.aster_home_evening
-    }
-    val foreground = if (hasWallpaper) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
-    Box(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 240.dp)
-            .clip(RoundedCornerShape(28.dp))
-            .background(Brush.linearGradient(listOf(
-                MaterialTheme.colorScheme.primaryContainer,
-                MaterialTheme.colorScheme.secondaryContainer
-            )))
-    ) {
-        if (hasWallpaper) {
-            AsyncImage(
-                model = ImageRequest.Builder(context).data(wallpaper)
-                    .memoryCacheKey("home-wallpaper-$wallpaperVersion")
-                    .diskCacheKey("home-wallpaper-$wallpaperVersion")
-                    .crossfade(true).build(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize()
-            )
-            Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(
-                Color.Black.copy(alpha = 0.60f), Color.Black.copy(alpha = 0.82f)
-            ))))
-        } else {
-            Icon(
-                painterResource(R.drawable.ic_ksu_next), contentDescription = null,
-                tint = foreground.copy(alpha = 0.08f),
-                modifier = Modifier.align(Alignment.TopEnd).padding(24.dp).size(128.dp)
-            )
-        }
-        Column(
-            modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth()
-                .padding(start = 22.dp, end = 22.dp, top = 94.dp, bottom = 22.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(stringResource(greeting), color = foreground,
-                style = MaterialTheme.typography.labelLarge)
-            Text(stringResource(R.string.app_name), color = foreground,
-                style = MaterialTheme.typography.headlineLarge)
-            Text("${Build.MANUFACTURER.replaceFirstChar { it.titlecase() }} ${Build.MODEL}",
-                color = foreground.copy(alpha = 0.84f), style = MaterialTheme.typography.bodyMedium)
-        }
-        Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) {
-            FilledTonalIconButton(onClick = { menuOpen = true }, enabled = !importing) {
-                if (importing) {
-                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                } else {
-                    Icon(Icons.Filled.Wallpaper, stringResource(R.string.aster_home_appearance))
-                }
-            }
-            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.aster_home_choose_wallpaper)) },
-                    leadingIcon = { Icon(Icons.Filled.PhotoLibrary, contentDescription = null) },
-                    onClick = {
-                        menuOpen = false
-                        picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    }
-                )
-                if (hasWallpaper) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.aster_home_clear_wallpaper)) },
-                        leadingIcon = { Icon(Icons.Filled.DeleteOutline, contentDescription = null) },
-                        onClick = {
-                            menuOpen = false
-                            scope.launch {
-                                importing = true
-                                try {
-                                    withContext(Dispatchers.IO) {
-                                        homeWallpaperMutex.withLock {
-                                            currentCoroutineContext().ensureActive()
-                                            AtomicFile(wallpaper).delete()
-                                            check(!wallpaper.exists())
-                                        }
-                                    }
-                                    hasWallpaper = false
-                                } catch (cancelled: CancellationException) {
-                                    throw cancelled
-                                } catch (_: Exception) {
-                                    Toast.makeText(context, R.string.aster_home_wallpaper_error, Toast.LENGTH_LONG).show()
-                                } finally {
-                                    importing = false
-                                }
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-private suspend fun saveHomeWallpaper(context: Context, uri: Uri, destination: File) {
-    // Bound both the encoded input and decoded dimensions. The picker grant is used only
-    // while importing; reopening Home needs no external-storage access or URI permission.
-    val limit = 24 * 1024 * 1024
-    val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
-        val output = java.io.ByteArrayOutputStream()
-        val buffer = ByteArray(8192)
-        var count: Int
-        while (input.read(buffer).also { count = it } != -1) {
-            currentCoroutineContext().ensureActive()
-            require(output.size() + count <= limit) { "Wallpaper is too large" }
-            output.write(buffer, 0, count)
-        }
-        output.toByteArray()
-    } ?: error("Cannot read wallpaper")
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-    require(bounds.outWidth > 0 && bounds.outHeight > 0) { "Invalid image" }
-    var sample = 1
-    while (maxOf(bounds.outWidth, bounds.outHeight) / sample > 2048) sample *= 2
-    val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-        // ImageDecoder applies EXIF orientation, so camera portraits stay upright.
-        ImageDecoder.decodeBitmap(ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes))) { decoder, info, _ ->
-            val ratio = (2048f / maxOf(info.size.width, info.size.height)).coerceAtMost(1f)
-            decoder.setTargetSize(
-                (info.size.width * ratio).toInt().coerceAtLeast(1),
-                (info.size.height * ratio).toInt().coerceAtLeast(1)
-            )
-            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-        }
-    } else {
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size,
-            BitmapFactory.Options().apply { inSampleSize = sample }) ?: error("Cannot decode image")
-    }
-    val atomic = AtomicFile(destination)
-    try {
-        currentCoroutineContext().ensureActive()
-        val stream = atomic.startWrite()
-        try {
-            check(bitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream))
-            currentCoroutineContext().ensureActive()
-            atomic.finishWrite(stream)
-        } catch (error: Exception) {
-            atomic.failWrite(stream)
-            throw error
-        }
-    } finally {
-        bitmap.recycle()
-    }
-}
-
 @Composable
 private fun SuperuserCard(onClick: (() -> Unit)? = null) {
     val count = getSuperuserCount()
-    ElevatedCard(
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min)
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(18.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Column(
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = if (count <= 1) {
-                        stringResource(R.string.home_superuser_count_singular)
-                    } else {
-                        stringResource(R.string.home_superuser_count_plural)
-                    },
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = count.toString(),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-    }
+    AsterCountCard(
+        label = stringResource(if (count <= 1) R.string.home_superuser_count_singular else R.string.home_superuser_count_plural),
+        count = count,
+        onClick = { onClick?.invoke() },
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ModuleCard(onClick: (() -> Unit)? = null) {
-    val count = getModuleCount()
     val moduleViewModel: ModuleViewModel = viewModel()
+    val modules = moduleViewModel.moduleList
+    val lifecycleOwner = LocalLifecycleOwner.current
+    // Shell-backed reads must not run during composition. Refresh when Home resumes
+    // and when the shared module list changes after an install/remove operation.
+    val count by produceState(initialValue = 0, key1 = modules, key2 = lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            value = withContext(Dispatchers.IO) { getModuleCount() }
+        }
+    }
 
-    val moduleUpdateCount = remember(moduleViewModel.moduleList) {
-        moduleViewModel.moduleList.count { module ->
-            module.enabled && (moduleViewModel.checkUpdate(module).first.isNotEmpty())
+    val moduleUpdateCount by produceState(initialValue = 0, key1 = modules) {
+        value = withContext(Dispatchers.IO) {
+            modules.count { module ->
+                currentCoroutineContext().ensureActive()
+                module.enabled && moduleViewModel.checkUpdate(module).first.isNotEmpty()
+            }
         }
     }
 
     // State machine: 0 = nothing, 1 = show "+ Update!", 2 = show "+ X"
-    var step by remember { mutableStateOf(0) }
+    var step by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(moduleUpdateCount) {
         if (moduleUpdateCount > 0) {
@@ -551,83 +489,19 @@ private fun ModuleCard(onClick: (() -> Unit)? = null) {
         }
     }
 
-    ElevatedCard(
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min)
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+    AsterCountCard(
+        label = stringResource(if (count <= 1) R.string.home_module_count_singular else R.string.home_module_count_plural),
+        count = count,
+        onClick = { onClick?.invoke() },
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(18.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Column(
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = if (count <= 1) {
-                        stringResource(R.string.home_module_count_singular)
-                    } else {
-                        stringResource(R.string.home_module_count_plural)
-                    },
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+        if (moduleUpdateCount > 0) {
+            AnimatedContent(targetState = step, label = "module-updates") { target ->
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = if (target == 1) stringResource(R.string.home_module_update_available) else "$moduleUpdateCount*",
+                    style = top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.footnote1,
+                    color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
                 )
-
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = count.toString(),
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    if (moduleUpdateCount > 0) {
-                        Spacer(Modifier.width(6.dp))
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            // Keep the "|" static
-                            Text(
-                                text = "|",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
-
-                            Spacer(Modifier.width(4.dp))
-
-                            // Animate only the right-side text
-                            AnimatedContent(
-                                targetState = step,
-                                transitionSpec = {
-                                    slideInHorizontally { -it } + fadeIn() togetherWith
-                                            slideOutHorizontally { it } + fadeOut()
-                                }
-                            ) { target ->
-                                when (target) {
-                                    1 -> Text(
-                                        text = stringResource(id = R.string.home_module_update_available),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    2 -> Text(
-                                        text = buildAnnotatedString {
-                                            append(moduleUpdateCount.toString())
-                                            append("*")
-                                        },
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
     }
@@ -646,7 +520,7 @@ fun UpdateCard() {
         }
     }
 
-    val currentVersionCode = getManagerVersion(context).second
+    val currentVersionCode = remember(context) { getManagerVersion(context).second }
     val newVersionCode = newVersion.versionCode
     val newVersionUrl = newVersion.downloadUrl
     val changelog = newVersion.changelog
@@ -662,167 +536,28 @@ fun UpdateCard() {
         exit = shrinkVertically() + fadeOut()
     ) {
         val updateDialog = rememberConfirmDialog(onConfirm = { uriHandler.openUri(newVersionUrl) })
-        ElevatedCard(
-            modifier = Modifier.clickable {
-                if (changelog.isEmpty()) {
-                    uriHandler.openUri(newVersionUrl)
-                } else {
-                    updateDialog.showConfirm(
-                        title = title,
-                        content = changelog,
-                        markdown = true,
-                        confirm = updateText
-                    )
-                }
-            },
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.primary
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            AsterUpdateAvailableCard(
+                title = stringResource(R.string.new_version_available, newVersionTag ?: "", newVersionCode),
+                onClick = {
+                    if (changelog.isEmpty()) uriHandler.openUri(newVersionUrl)
+                    else updateDialog.showConfirm(title = title, content = changelog, markdown = true, confirm = updateText)
+                },
             )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Update,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(end = 20.dp)
+            top.yukonga.miuix.kmp.basic.Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        stringResource(R.string.select_build_type),
+                        style = top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.body2,
                     )
-                    Text(
-                        text = if (!newVersionTag.isNullOrEmpty()) {
-                            stringResource(id = R.string.new_version_available, newVersionTag, newVersionCode)
-                        } else {
-                            stringResource(id = R.string.new_version_available, "", newVersionCode)
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.weight(1f)
+                    top.yukonga.miuix.kmp.preference.RadioButtonPreference(
+                        title = stringResource(R.string.main), selected = !preferSpoofed,
+                        onClick = { preferSpoofed = false },
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary
+                    top.yukonga.miuix.kmp.preference.RadioButtonPreference(
+                        title = stringResource(R.string.spoofed), selected = preferSpoofed,
+                        onClick = { preferSpoofed = true },
                     )
-                }
-                
-                Spacer(modifier = Modifier.height(20.dp))
-                
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = stringResource(id = R.string.select_build_type),
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                    
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .padding(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        if (!preferSpoofed) {
-                            FilledTonalButton(
-                                onClick = { preferSpoofed = false },
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                                colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                ),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Verified,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Text(stringResource(id = R.string.main), style = MaterialTheme.typography.labelMedium)
-                                }
-                            }
-                        } else {
-                            FilledTonalButton(
-                                onClick = { preferSpoofed = false },
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                                colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.69f),
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                ),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Verified,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Text(stringResource(id = R.string.main), style = MaterialTheme.typography.labelMedium)
-                                }
-                            }
-                        }
-                        
-                        if (preferSpoofed) {
-                            FilledTonalButton(
-                                onClick = { preferSpoofed = true },
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                                colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                ),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.VisibilityOff,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Text(stringResource(id = R.string.spoofed), style = MaterialTheme.typography.labelMedium)
-                                }
-                            }
-                        } else {
-                            FilledTonalButton(
-                                onClick = { preferSpoofed = true },
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                                colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.69f),
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                ),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.VisibilityOff,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Text(stringResource(id = R.string.spoofed), style = MaterialTheme.typography.labelMedium)
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -1207,42 +942,15 @@ private fun InfoCard(autoExpand: Boolean = false) {
         }
     }
 
-    Card {
+    top.yukonga.miuix.kmp.basic.Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 24.dp)
+                .padding(16.dp)
         ) {
             @Composable
             fun InfoCardItem(label: String, content: String, icon: Any? = null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (icon != null) {
-                        when (icon) {
-                            is ImageVector -> Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                modifier = Modifier.padding(end = 20.dp)
-                            )
-                            is Painter -> Icon(
-                                painter = icon,
-                                contentDescription = null,
-                                modifier = Modifier.padding(end = 20.dp)
-                            )
-                        }
-                    }
-                    Column {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = content,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                }
+                AsterDeviceInfoItem(title = label, content = content)
             }
 
             Column {
@@ -1418,7 +1126,7 @@ fun ContributorsCard() {
         )
     )
 
-    Card {
+    top.yukonga.miuix.kmp.basic.Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1550,7 +1258,7 @@ fun IssueReportCard() {
     val githubIssueUrl = stringResource(R.string.issue_report_github_link)
     val telegramUrl = stringResource(R.string.issue_report_telegram_link)
 
-    Card {
+    top.yukonga.miuix.kmp.basic.Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)

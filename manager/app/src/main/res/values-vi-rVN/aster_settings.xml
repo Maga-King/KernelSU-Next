@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="settings_section_appearance">Giao diện</string>
+    <string name="settings_section_navigation">Điều hướng &amp; shell</string>
+    <string name="settings_section_kernel">Nhân (Kernel)</string>
+    <string name="settings_section_general">Chung</string>
+</resources>

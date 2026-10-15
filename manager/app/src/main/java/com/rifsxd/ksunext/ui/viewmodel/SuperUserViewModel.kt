@@ -185,7 +185,9 @@ class SuperUserViewModel : ViewModel() {
             isRefreshing = true
 
             try {
-                if (!Shell.getShell().isRoot) {
+                // Shell creation can wait for the automatic Root request. Keep that wait
+                // off the UI thread while retaining the same request and authorization flow.
+                if (!withContext(Dispatchers.IO) { Shell.getShell().isRoot }) {
                     throw IllegalStateException("Root access is required")
                 }
 

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_appearance">مظهر الصفحة الرئيسية</string>
+    <string name="home_scene_clock_style_stacked">وقت من سطرين</string>
+    <string name="home_scene_clock_style_stacked_summary">الساعات فوق الدقائق، كما اعتاد الشريط الرأسي عرضهما.</string>
+    <string name="home_scene_clock_style_inline">وقت من سطر واحد</string>
+    <string name="home_scene_clock_style_inline_summary">سطر واحد للوقت والتاريخ أسفله.</string>
+    <string name="home_scene_clock_style_analog">ساعة عقارب</string>
+    <string name="home_scene_clock_style_analog_summary">واجهة ساعة بدلًا من الأرقام.</string>
+    <string name="home_scene_clock_style_date">التاريخ فقط</string>
+    <string name="home_scene_clock_style_date_summary">يوم الأسبوع والتاريخ دون الوقت.</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">نمط الصفحة الرئيسية</string>
+    <string name="global_layout_panorama">بانوراما</string>
+    <string name="global_layout_panorama_summary">مشهد خلفية في الصفحة الرئيسية وتنقل عائم في الصفحات الأخرى.</string>
+    <string name="global_layout_standard">قياسي</string>
+    <string name="global_layout_standard_summary">شريط سفلي أو شريط جانبي كلاسيكي في كل الصفحات.</string>
+</resources>

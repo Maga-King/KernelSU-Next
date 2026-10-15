@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -51,6 +52,7 @@ fun ExecuteModuleActionScreen(navigator: DestinationsNavigator, moduleId: String
     var isActionRunning by rememberSaveable { mutableStateOf(true) }
 
     val context = LocalContext.current
+    val resources = LocalResources.current
     // Read developer options from SharedPreferences
     val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     val developerOptionsEnabled = prefs.getBoolean("enable_developer_options", false)
@@ -110,7 +112,7 @@ fun ExecuteModuleActionScreen(navigator: DestinationsNavigator, moduleId: String
                                 "KernelSU_Next_module_action_log_${date}.log"
                             )
                             file.writeText(logContent.toString())
-                            snackBarHost.showSnackbar(context.getString(R.string.log_saved_to, BidiFormatter.getInstance().unicodeWrap(file.absolutePath)))
+                            snackBarHost.showSnackbar(resources.getString(R.string.log_saved_to, BidiFormatter.getInstance().unicodeWrap(file.absolutePath)))
                         }
                     }
                 }

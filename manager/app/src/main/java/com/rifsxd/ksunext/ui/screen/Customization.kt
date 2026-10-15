@@ -86,9 +86,10 @@ fun CustomizationScreen(navigator: DestinationsNavigator) {
         currentAppLocale = LocaleHelper.getCurrentAppLocale(context)
     }
 
-    val languageOptions = remember(context) {
+    val systemLanguageLabel = stringResource(R.string.system_default)
+    val languageOptions = remember(context, systemLanguageLabel) {
         listOf(
-            LocaleHelper.SYSTEM_LANGUAGE_TAG to context.getString(R.string.system_default)
+            LocaleHelper.SYSTEM_LANGUAGE_TAG to systemLanguageLabel
         ) + LocaleHelper.getSupportedLocales(context)
             .map { it.toLanguageTag() to it.getDisplayName(it) }
             .sortedBy { (_, displayName) -> displayName }
@@ -183,14 +184,18 @@ fun CustomizationScreen(navigator: DestinationsNavigator) {
                 )
             }
             val activity = LocalActivity.current as? MainActivity
-            val panorama = activity?.panoramaEnabled?.value ?: true
+            val panorama = com.rifsxd.ksunext.ui.shell.rememberGlobalLayout().value ==
+                com.rifsxd.ksunext.ui.shell.GlobalLayout.Panorama
             SwitchItem(
                 icon = Icons.Filled.ViewCarousel,
                 title = stringResource(R.string.aster_panorama),
                 summary = stringResource(R.string.aster_panorama_summary),
                 checked = panorama,
             ) { checked ->
-                activity?.setPanoramaEnabled(checked)
+                com.rifsxd.ksunext.ui.shell.setGlobalLayout(
+                    if (checked) com.rifsxd.ksunext.ui.shell.GlobalLayout.Panorama
+                    else com.rifsxd.ksunext.ui.shell.GlobalLayout.Standard
+                )
             }
             SwitchItem(
                 icon = Icons.Filled.Dock,

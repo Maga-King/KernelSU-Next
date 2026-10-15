@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="settings_section_appearance">Tampilan</string>
+    <string name="settings_section_navigation">Navigasi &amp; shell</string>
+    <string name="settings_section_kernel">Kernel</string>
+    <string name="settings_section_general">Umum</string>
+</resources>

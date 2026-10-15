@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="settings_section_appearance">外観</string>
+    <string name="settings_section_navigation">ナビゲーションとシェル</string>
+    <string name="settings_section_kernel">カーネル</string>
+    <string name="settings_section_general">一般</string>
+</resources>

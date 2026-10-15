@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_appearance">Giao diện Trang chủ</string>
+    <string name="home_scene_clock_style_stacked">Giờ hai dòng</string>
+    <string name="home_scene_clock_style_stacked_summary">Giờ trên phút, đúng như cách thanh bên vẫn luôn hiển thị.</string>
+    <string name="home_scene_clock_style_inline">Giờ một dòng</string>
+    <string name="home_scene_clock_style_inline_summary">Giờ trên một dòng, ngày ở bên dưới.</string>
+    <string name="home_scene_clock_style_analog">Mặt đồng hồ</string>
+    <string name="home_scene_clock_style_analog_summary">Dùng mặt đồng hồ thay cho chữ số.</string>
+    <string name="home_scene_clock_style_date">Chỉ ngày</string>
+    <string name="home_scene_clock_style_date_summary">Thứ và ngày, không có giờ.</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">Kiểu Trang chủ</string>
+    <string name="global_layout_panorama">Toàn cảnh</string>
+    <string name="global_layout_panorama_summary">Cảnh nền trên Trang chủ, điều hướng nổi trên các trang khác.</string>
+    <string name="global_layout_standard">Tiêu chuẩn</string>
+    <string name="global_layout_standard_summary">Bố cục thanh dưới hoặc thanh bên cổ điển trên mọi trang.</string>
+</resources>

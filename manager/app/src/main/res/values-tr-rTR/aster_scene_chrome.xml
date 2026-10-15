@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="home_appearance">Ana sayfa görünümü</string>
+    <string name="home_scene_clock_style_stacked">İki satırlı saat</string>
+    <string name="home_scene_clock_style_stacked_summary">Saatler dakikaların üstünde; şeridin her zaman çizdiği biçimde.</string>
+    <string name="home_scene_clock_style_inline">Tek satırlı saat</string>
+    <string name="home_scene_clock_style_inline_summary">Tek satırda saat, altında tarih.</string>
+    <string name="home_scene_clock_style_analog">Kadran</string>
+    <string name="home_scene_clock_style_analog_summary">Sayılar yerine bir saat kadranı.</string>
+    <string name="home_scene_clock_style_date">Yalnızca tarih</string>
+    <string name="home_scene_clock_style_date_summary">Saat olmadan haftanın günü ve tarih.</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">Ana sayfa stili</string>
+    <string name="global_layout_panorama">Panorama</string>
+    <string name="global_layout_panorama_summary">Ana sayfada duvar kağıdı sahnesi, diğer sayfalarda yüzen gezinme.</string>
+    <string name="global_layout_standard">Standart</string>
+    <string name="global_layout_standard_summary">Her sayfada klasik alt çubuk veya kenar çubuğu düzeni.</string>
+</resources>

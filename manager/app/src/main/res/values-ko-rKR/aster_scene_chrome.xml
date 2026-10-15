@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_appearance">홈 모양</string>
+    <string name="home_scene_clock_style_stacked">두 줄 시간</string>
+    <string name="home_scene_clock_style_stacked_summary">시를 위에, 분을 아래에 표시하는 기존 레일 방식입니다.</string>
+    <string name="home_scene_clock_style_inline">한 줄 시간</string>
+    <string name="home_scene_clock_style_inline_summary">시간을 한 줄로 표시하고 그 아래에 날짜를 표시합니다.</string>
+    <string name="home_scene_clock_style_analog">아날로그</string>
+    <string name="home_scene_clock_style_analog_summary">숫자 대신 시계 문자판을 표시합니다.</string>
+    <string name="home_scene_clock_style_date">날짜만</string>
+    <string name="home_scene_clock_style_date_summary">시간 없이 요일과 날짜만 표시합니다.</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">홈 스타일</string>
+    <string name="global_layout_panorama">파노라마</string>
+    <string name="global_layout_panorama_summary">홈에는 배경화면 장면을, 다른 페이지에는 플로팅 내비게이션을 표시합니다.</string>
+    <string name="global_layout_standard">표준</string>
+    <string name="global_layout_standard_summary">모든 페이지에서 기존 하단 바 또는 사이드바 레이아웃을 사용합니다.</string>
+</resources>

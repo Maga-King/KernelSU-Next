@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="home_appearance">Home appearance</string>
+    <string name="home_scene_clock_style_stacked">Two-line time</string>
+    <string name="home_scene_clock_style_stacked_summary">Hours over minutes, the way the rail has always drawn them.</string>
+    <string name="home_scene_clock_style_inline">One-line time</string>
+    <string name="home_scene_clock_style_inline_summary">One line of time, the date underneath.</string>
+    <string name="home_scene_clock_style_analog">Dial</string>
+    <string name="home_scene_clock_style_analog_summary">A watch face instead of the numbers.</string>
+    <string name="home_scene_clock_style_date">Date only</string>
+    <string name="home_scene_clock_style_date_summary">The weekday and the date, without the time.</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">Home style</string>
+    <string name="global_layout_panorama">Panorama</string>
+    <string name="global_layout_panorama_summary">Wallpaper scene on Home, floating navigation on other pages.</string>
+    <string name="global_layout_standard">Standard</string>
+    <string name="global_layout_standard_summary">Classic bottom bar or sidebar layout on every page.</string>
+</resources>

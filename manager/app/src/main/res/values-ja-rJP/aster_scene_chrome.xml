@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_appearance">ホームの外観</string>
+    <string name="home_scene_clock_style_stacked">2 行表示の時刻</string>
+    <string name="home_scene_clock_style_stacked_summary">これまでレールで表示してきた、時の上に分を重ねる形式です。</string>
+    <string name="home_scene_clock_style_inline">1 行表示の時刻</string>
+    <string name="home_scene_clock_style_inline_summary">時刻を 1 行で表示し、その下に日付を表示します。</string>
+    <string name="home_scene_clock_style_analog">文字盤</string>
+    <string name="home_scene_clock_style_analog_summary">数字の代わりに時計の文字盤を表示します。</string>
+    <string name="home_scene_clock_style_date">日付のみ</string>
+    <string name="home_scene_clock_style_date_summary">時刻を除いた曜日と日付を表示します。</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">ホームのスタイル</string>
+    <string name="global_layout_panorama">パノラマ</string>
+    <string name="global_layout_panorama_summary">ホームには壁紙シーンを、他のページにはフローティングナビゲーションを表示します。</string>
+    <string name="global_layout_standard">標準</string>
+    <string name="global_layout_standard_summary">すべてのページで従来の下部バーまたはサイドバーのレイアウトを使用します。</string>
+</resources>

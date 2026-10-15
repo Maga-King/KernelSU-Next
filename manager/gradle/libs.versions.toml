@@ -1,14 +1,15 @@
 [versions]
-agp = "8.13.1"
-kotlin = "2.2.0"
-ksp = "2.2.0-2.0.2"
-compose-bom = "2025.07.00"
-lifecycle = "2.9.2"
+agp = "9.1.1"
+kotlin = "2.4.10"
+ksp = "2.3.11"
+compose-bom = "2026.08.00"
+lifecycle = "2.11.0"
 navigation = "2.9.1"
-activity-compose = "1.10.1"
+# Match Aster: Miuix overlays require Activity's NavigationEventDispatcherOwner.
+activity-compose = "1.13.0"
 kotlinx-coroutines = "1.10.2"
 coil-compose = "2.7.0"
-compose-destination = "2.2.0"
+compose-destination = "2.3.0"
 sheets-compose-dialogs = "1.3.0"
 markdown = "4.6.2"
 webkit = "1.14.0"
@@ -17,10 +18,12 @@ parcelablelist = "2.0.1"
 ndk = "29.0.14206865"
 libsu = "6.0.0"
 apksign = "1.4"
-cmaker = "1.2"
+cmaker = "1.5"
 haze = "1.7.1"
-capsule = "2.1.1"
+capsule = "2.1.3"
 mmrl = "v33953"
+miuix = "0.9.3"
+backdrop = "1.0.6"
 
 [plugins]
 agp-app = { id = "com.android.application", version.ref = "agp" }
@@ -36,6 +39,8 @@ lsplugin-cmaker = { id = "org.lsposed.lsplugin.cmaker", version.ref = "cmaker" }
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
+# FragmentActivity must forward Activity Result callbacks (Aster uses 1.5.4 via AppCompat).
+androidx-fragment = { module = "androidx.fragment:fragment", version = "1.5.4" }
 
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 
@@ -78,3 +83,10 @@ markdown = { group = "io.noties.markwon", name = "core", version.ref = "markdown
 lsposed-cxx = { module = "org.lsposed.libcxx:libcxx", version = "28.1.13356709" }
 
 mmrl-ui = { group = "com.github.MMRLApp.MMRL", name = "ui", version.ref = "mmrl" }
+
+# Aster UI components; retain Material dependencies for existing KernelSU screens.
+miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui-android", version.ref = "miuix" }
+miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons-android", version.ref = "miuix" }
+miuix-preference = { module = "top.yukonga.miuix.kmp:miuix-preference-android", version.ref = "miuix" }
+backdrop = { module = "io.github.kyant0:backdrop", version.ref = "backdrop" }
+capsule = { module = "io.github.kyant0:capsule", version.ref = "capsule" }

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_appearance">Tampilan Beranda</string>
+    <string name="home_scene_clock_style_stacked">Waktu dua baris</string>
+    <string name="home_scene_clock_style_stacked_summary">Jam di atas menit, seperti tampilan rel yang biasa.</string>
+    <string name="home_scene_clock_style_inline">Waktu satu baris</string>
+    <string name="home_scene_clock_style_inline_summary">Waktu dalam satu baris, tanggal di bawahnya.</string>
+    <string name="home_scene_clock_style_analog">Jam analog</string>
+    <string name="home_scene_clock_style_analog_summary">Tampilan jam analog sebagai pengganti angka.</string>
+    <string name="home_scene_clock_style_date">Hanya tanggal</string>
+    <string name="home_scene_clock_style_date_summary">Hari dan tanggal, tanpa waktu.</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">Gaya Beranda</string>
+    <string name="global_layout_panorama">Panorama</string>
+    <string name="global_layout_panorama_summary">Latar wallpaper di Beranda, navigasi mengambang di halaman lain.</string>
+    <string name="global_layout_standard">Standar</string>
+    <string name="global_layout_standard_summary">Tata letak bilah bawah atau bilah samping klasik di setiap halaman.</string>
+</resources>

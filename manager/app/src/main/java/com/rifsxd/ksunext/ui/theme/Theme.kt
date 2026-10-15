@@ -1,64 +1,36 @@
+// Theme controller and palette selection transplanted from lyravoid/Aster
+// revision 84a9116606b01e436e9b58852acee9e8b9b9e627, GPL-3.0.
 package com.rifsxd.ksunext.ui.theme
 
 import android.os.Build
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.rifsxd.ksunext.ui.shell.GlobalLayout
+import com.rifsxd.ksunext.ui.shell.rememberGlobalLayout
+import com.rifsxd.ksunext.ui.shell.rememberVisualChoice
+import com.rifsxd.ksunext.ui.shell.rememberVisualFlag
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
-// Aster / LyraVoid (GPL-3.0): soft tonal surfaces and generous rounded groups,
-// adapted to the existing Material 3 components without replacing manager logic.
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF80D5E4),
-    onPrimary = Color(0xFF00363E),
-    primaryContainer = Color(0xFF154E58),
-    onPrimaryContainer = Color(0xFFB8EDF4),
-    secondary = Color(0xFFC6C5DF),
-    secondaryContainer = Color(0xFF343447),
-    onSecondaryContainer = Color(0xFFE6E4F7),
-    tertiary = Color(0xFFF1B8CA),
-    background = Color(0xFF111116),
-    surface = Color(0xFF111116),
-    onSurface = Color(0xFFE8E6EE),
-    onSurfaceVariant = Color(0xFFB7B5C3),
-    surfaceContainerLowest = Color(0xFF0D0D12),
-    surfaceContainerLow = Color(0xFF1B1B23),
-    surfaceContainer = Color(0xFF22222D),
-    surfaceContainerHigh = Color(0xFF292935),
-    surfaceContainerHighest = Color(0xFF32323F),
-    surfaceVariant = Color(0xFF333340),
-    outlineVariant = Color(0xFF444451)
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF006B7A),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFC5EDF3),
-    onPrimaryContainer = Color(0xFF004F5B),
-    secondary = Color(0xFF5C5B75),
-    secondaryContainer = Color(0xFFE9E8F7),
-    onSecondaryContainer = Color(0xFF323247),
-    tertiary = Color(0xFF875167),
-    background = Color(0xFFF8F7FC),
-    surface = Color(0xFFF8F7FC),
-    onSurface = Color(0xFF202029),
-    onSurfaceVariant = Color(0xFF646271),
-    surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFF1F0F9),
-    surfaceContainer = Color(0xFFEBEAF6),
-    surfaceContainerHigh = Color(0xFFE5E4F1),
-    surfaceContainerHighest = Color(0xFFDEDEEC),
-    surfaceVariant = Color(0xFFE5E4F0),
-    outlineVariant = Color(0xFFD1CFDF)
-)
+@Immutable
+data class ThemeModeState(val isDark: Boolean, val isDynamicColor: Boolean)
+val LocalThemeModeState = compositionLocalOf { ThemeModeState(false, true) }
+val refreshTheme = mutableStateOf(false)
 
 fun Color.blend(other: Color, ratio: Float): Color {
     val inverse = 1f - ratio
@@ -70,92 +42,151 @@ fun Color.blend(other: Color, ratio: Float): Color {
     )
 }
 
+
 @Composable
 fun KernelSUTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     amoledMode: Boolean = false,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        amoledMode && darkTheme && dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            val dynamicScheme = dynamicDarkColorScheme(context)
-            dynamicScheme.copy(
-                background = AMOLED_BLACK,
-                surface = AMOLED_BLACK,
-                surfaceVariant = dynamicScheme.surfaceVariant.blend(AMOLED_BLACK, 0.6f),
-                surfaceContainer = dynamicScheme.surfaceContainer.blend(AMOLED_BLACK, 0.6f),
-                surfaceContainerLow = dynamicScheme.surfaceContainerLow.blend(AMOLED_BLACK, 0.6f),
-                surfaceContainerLowest = dynamicScheme.surfaceContainerLowest.blend(AMOLED_BLACK, 0.6f),
-                surfaceContainerHigh = dynamicScheme.surfaceContainerHigh.blend(AMOLED_BLACK, 0.6f),
-                surfaceContainerHighest = dynamicScheme.surfaceContainerHighest.blend(AMOLED_BLACK, 0.6f)
-            )
-        }
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        amoledMode && darkTheme -> {
-            DarkColorScheme.copy(
-                background = AMOLED_BLACK,
-                surface = AMOLED_BLACK,
-                surfaceVariant = DARK_GREY.blend(AMOLED_BLACK, 0.8f),
-                surfaceContainer = DARK_GREY.blend(AMOLED_BLACK, 0.8f),
-                surfaceContainerLow = DARK_GREY.blend(AMOLED_BLACK, 0.8f),
-                surfaceContainerLowest = DARK_GREY.blend(AMOLED_BLACK, 0.8f),
-                surfaceContainerHigh = DARK_GREY.blend(AMOLED_BLACK, 0.8f),
-                surfaceContainerHighest = DARK_GREY.blend(AMOLED_BLACK, 0.8f),
-            )
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    val activity = LocalActivity.current as? ComponentActivity
+    val useSystemColor by rememberVisualFlag(SystemDynamicColorKey, true)
+    val effectiveDynamicColor = dynamicColor && useSystemColor
+    val customColorScheme by rememberVisualChoice(PresetColorKey, DefaultPresetColor)
+    // A wallpaper read reports loading/error progress too. Only its enabled flag and seed
+    // can change the palette; keep those progress updates out of the theme composition.
+    val initialWallpaperPalette = remember { WallpaperColorTheme.state.value.let { it.enabled to it.seed } }
+    val wallpaperPalette by remember {
+        WallpaperColorTheme.state.map { it.enabled to it.seed }.distinctUntilChanged()
+    }.collectAsState(initial = initialWallpaperPalette)
+    val useWallpaperColor = wallpaperPalette.first
+    val wallpaperColorSeed = wallpaperPalette.second
+    val themeColorScheme = rememberThemeColorSchemeState()
+    val panoramaHome = rememberGlobalLayout().value == GlobalLayout.Panorama
+    val miuixColorSchemeMode = when {
+        darkTheme -> ColorSchemeMode.MonetDark
+        else -> ColorSchemeMode.MonetLight
     }
-
-    SystemBarStyle(
-        darkMode = darkTheme
+    // A palette of the reader's own only means anything when it is built from a seed of the
+    // reader's own, so the system seed is read only once they have chosen one. Left alone, the key
+    // colour below stays null and Miuix draws the platform's colours as they are, down to the
+    // style and the spec — the palette this app had before the choice existed.
+    val paletteChosen = !themeColorScheme.isDefaultPalette()
+    val systemColorSeed = rememberSystemPaletteSeed(enabled = effectiveDynamicColor && paletteChosen)
+    val themeColorChoice = resolveThemeColorChoice(
+        panoramaHome = panoramaHome,
+        wallpaperEnabled = useWallpaperColor,
+        wallpaperSeed = wallpaperColorSeed,
+        systemDynamicEnabled = effectiveDynamicColor,
+        systemSeed = systemColorSeed,
+        paletteChosen = paletteChosen,
+        presetSeed = presetThemeSeed(customColorScheme),
     )
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        shapes = Shapes(
-            extraSmall = RoundedCornerShape(8.dp),
-            small = RoundedCornerShape(12.dp),
-            medium = RoundedCornerShape(20.dp),
-            large = RoundedCornerShape(26.dp),
-            extraLarge = RoundedCornerShape(32.dp)
-        ),
-        content = content
-    )
-}
-
-@Composable
-private fun SystemBarStyle(
-    darkMode: Boolean,
-    statusBarScrim: Color = Color.Transparent,
-    navigationBarScrim: Color = Color.Transparent,
-) {
-    val context = LocalContext.current
-    val activity = context as ComponentActivity
-
-    SideEffect {
-        activity.enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(
-                statusBarScrim.toArgb(),
-                statusBarScrim.toArgb(),
-            ) { darkMode },
-            navigationBarStyle = when {
-                darkMode -> SystemBarStyle.dark(
-                    navigationBarScrim.toArgb()
-                )
-
-                else -> SystemBarStyle.light(
-                    navigationBarScrim.toArgb(),
-                    navigationBarScrim.toArgb(),
-                )
-            }
+    // Seed zero is how the resolver says "let the platform decide"; a real one is the colour the
+    // style and the spec are applied to.
+    val miuixKeyColor = themeColorChoice.seed.takeIf { it != 0 }?.let { argb -> Color(argb) }
+    val miuixThemeController = remember(
+        miuixColorSchemeMode,
+        miuixKeyColor,
+        themeColorScheme.style,
+        themeColorScheme.spec,
+    ) {
+        ThemeController(
+            colorSchemeMode = miuixColorSchemeMode,
+            keyColor = miuixKeyColor,
+            colorSpec = themeColorScheme.spec,
+            paletteStyle = themeColorScheme.style,
         )
     }
+
+
+    val resolvedColors = miuixThemeController.currentColors()
+    val uiColors = if (amoledMode && darkTheme) resolvedColors.copy(
+        background = Color.Black,
+        surface = Color.Black,
+        surfaceContainer = resolvedColors.surfaceContainer.blend(Color.Black, 0.6f),
+        surfaceContainerHigh = resolvedColors.surfaceContainerHigh.blend(Color.Black, 0.6f),
+        surfaceContainerHighest = resolvedColors.surfaceContainerHighest.blend(Color.Black, 0.6f),
+    ) else resolvedColors
+    MiuixTheme(colors = uiColors) {
+        val colors = MiuixTheme.colorScheme
+        // Existing KSUN detail screens keep their APIs while reading the same real Aster palette.
+        val base = if (darkTheme) darkColorScheme() else lightColorScheme()
+        val material = base.copy(
+            primary = colors.primary,
+            onPrimary = colors.onPrimary,
+            primaryContainer = colors.primaryContainer,
+            onPrimaryContainer = colors.onPrimaryContainer,
+            background = if (amoledMode && darkTheme) Color.Black else colors.background,
+            surface = if (amoledMode && darkTheme) Color.Black else colors.surface,
+            onSurface = colors.onSurface,
+            onBackground = colors.onBackground,
+            surfaceContainer = colors.surfaceContainer,
+            surfaceContainerLow = colors.surfaceContainer,
+            surfaceContainerHigh = colors.surfaceContainer,
+            surfaceVariant = colors.surfaceContainer,
+            onSurfaceVariant = colors.onSurfaceContainer,
+        )
+        DisposableEffect(activity, darkTheme) {
+            activity?.enableEdgeToEdge(
+                statusBarStyle = SystemBarStyle.auto(Color.Transparent.toArgb(), Color.Transparent.toArgb()) { darkTheme },
+                navigationBarStyle = if (darkTheme) SystemBarStyle.dark(Color.Transparent.toArgb())
+                    else SystemBarStyle.light(Color.Transparent.toArgb(), Color.Transparent.toArgb()),
+            )
+            onDispose { }
+        }
+        CompositionLocalProvider(
+            LocalThemeModeState provides ThemeModeState(darkTheme, effectiveDynamicColor),
+            // Miuix and Material expose separate locals. Legacy KSUN text/icons must
+            // inherit the same foreground when hosted inside an Aster card.
+            androidx.compose.material3.LocalContentColor provides material.onSurface,
+        ) {
+            MaterialTheme(
+                colorScheme = material,
+                typography = Typography,
+                shapes = Shapes(
+                    extraSmall = RoundedCornerShape(8.dp), small = RoundedCornerShape(12.dp),
+                    medium = RoundedCornerShape(20.dp), large = RoundedCornerShape(26.dp),
+                    extraLarge = RoundedCornerShape(32.dp),
+                ),
+                content = content,
+            )
+        }
+    }
 }
+
+/** The preset colour as a seed, and the last resort when no other source can offer one. */
+internal fun presetThemeSeed(colorName: String?): Int =
+    (LegacyMiuixThemeSeeds[colorName] ?: LegacyMiuixThemeSeeds.getValue("blue")).toArgb()
+
+private val LegacyMiuixThemeSeeds = mapOf(
+    "amber" to Color(0xFFFFC107),
+    "blue_grey" to Color(0xFF607D8B),
+    "blue" to Color(0xFF2196F3),
+    "brown" to Color(0xFF795548),
+    "cyan" to Color(0xFF00BCD4),
+    "deep_orange" to Color(0xFFFF5722),
+    "deep_purple" to Color(0xFF673AB7),
+    "green" to Color(0xFF4CAF50),
+    "indigo" to Color(0xFF3F51B5),
+    "light_blue" to Color(0xFF03A9F4),
+    "light_green" to Color(0xFF8BC34A),
+    "lime" to Color(0xFFCDDC39),
+    "orange" to Color(0xFFFF9800),
+    "pink" to Color(0xFFE91E63),
+    "purple" to Color(0xFF9C27B0),
+    "red" to Color(0xFFF44336),
+    "sakura" to Color(0xFFE88AA6),
+    "teal" to Color(0xFF009688),
+    "yellow" to Color(0xFFFFD600),
+)
+
+/**
+ * The preset colours by name, in the order they are offered.
+ *
+ * The desktop icon carries a built form of each, because a launcher cannot be handed a colour that
+ * only exists in our preferences. Reading the names off the map itself is what keeps the two lists
+ * from drifting apart.
+ */
+internal val presetColorNames: List<String> = LegacyMiuixThemeSeeds.keys.toList()

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_appearance">Apariencia de Inicio</string>
+    <string name="home_scene_clock_style_stacked">Hora en dos líneas</string>
+    <string name="home_scene_clock_style_stacked_summary">Las horas sobre los minutos, tal como la barra los ha mostrado siempre.</string>
+    <string name="home_scene_clock_style_inline">Hora en una línea</string>
+    <string name="home_scene_clock_style_inline_summary">La hora en una línea y la fecha debajo.</string>
+    <string name="home_scene_clock_style_analog">Esfera</string>
+    <string name="home_scene_clock_style_analog_summary">Una esfera de reloj en lugar de los números.</string>
+    <string name="home_scene_clock_style_date">Solo la fecha</string>
+    <string name="home_scene_clock_style_date_summary">El día de la semana y la fecha, sin la hora.</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">Estilo de Inicio</string>
+    <string name="global_layout_panorama">Panorama</string>
+    <string name="global_layout_panorama_summary">Escena de fondo de pantalla en Inicio y navegación flotante en las demás páginas.</string>
+    <string name="global_layout_standard">Estándar</string>
+    <string name="global_layout_standard_summary">Disposición clásica con barra inferior o lateral en todas las páginas.</string>
+</resources>

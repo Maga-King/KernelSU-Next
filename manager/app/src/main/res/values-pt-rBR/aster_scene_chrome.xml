@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="home_appearance">Aparência da tela inicial</string>
+    <string name="home_scene_clock_style_stacked">Hora em duas linhas</string>
+    <string name="home_scene_clock_style_stacked_summary">Horas sobre minutos, como a barra sempre os exibiu.</string>
+    <string name="home_scene_clock_style_inline">Hora em uma linha</string>
+    <string name="home_scene_clock_style_inline_summary">Hora em uma linha, com a data abaixo.</string>
+    <string name="home_scene_clock_style_analog">Mostrador</string>
+    <string name="home_scene_clock_style_analog_summary">Um mostrador de relógio em vez dos números.</string>
+    <string name="home_scene_clock_style_date">Somente data</string>
+    <string name="home_scene_clock_style_date_summary">O dia da semana e a data, sem a hora.</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">Estilo da tela inicial</string>
+    <string name="global_layout_panorama">Panorama</string>
+    <string name="global_layout_panorama_summary">Cena de papel de parede na tela inicial e navegação flutuante nas outras páginas.</string>
+    <string name="global_layout_standard">Padrão</string>
+    <string name="global_layout_standard_summary">Layout clássico com barra inferior ou barra lateral em todas as páginas.</string>
+</resources>

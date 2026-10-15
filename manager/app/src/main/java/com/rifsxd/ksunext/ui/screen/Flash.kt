@@ -22,6 +22,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -106,6 +107,7 @@ fun FlashScreen(
     }
 
     val context = LocalContext.current
+    val resources = LocalResources.current
 
     val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     val developerOptionsEnabled = prefs.getBoolean("enable_developer_options", false)
@@ -143,14 +145,14 @@ fun FlashScreen(
                 val moduleDetails = modules.mapIndexed { index, module ->
                     buildString {
                         append("${index + 1}. ${module.fileName}\n")
-                        append("- ${context.getString(R.string.module_id)}: ${module.id}\n")
-                        append("- ${context.getString(R.string.module)}: ${module.name}\n")
-                        append("- ${context.getString(R.string.module_version)}: ${module.version}\n")
-                        append("- ${context.getString(R.string.module_author)}: ${module.author}\n")
+                        append("- ${resources.getString(R.string.module_id)}: ${module.id}\n")
+                        append("- ${resources.getString(R.string.module)}: ${module.name}\n")
+                        append("- ${resources.getString(R.string.module_version)}: ${module.version}\n")
+                        append("- ${resources.getString(R.string.module_author)}: ${module.author}\n")
                     }
                 }.joinToString("\n\n")
                 val confirmContent = moduleDetails
-                val confirmTitle = context.getString(R.string.module)
+                val confirmTitle = resources.getString(R.string.module)
                 val result = confirmDialog.awaitConfirm(
                     title = confirmTitle,
                     content = confirmContent,
@@ -167,9 +169,9 @@ fun FlashScreen(
             flashIt is FlashIt.FlashAnyKernel && !confirmed -> {
                 val name = flashIt.uri.getFileName(context)
                 val confirmContent =
-                    context.getString(R.string.anykernel_flash_prompt, name)
+                    resources.getString(R.string.anykernel_flash_prompt, name)
                 // reuse the existing label for title
-                val confirmTitle = context.getString(R.string.flash_anykernel)
+                val confirmTitle = resources.getString(R.string.flash_anykernel)
                 val result = confirmDialog.awaitConfirm(
                     title = confirmTitle,
                     content = confirmContent,
@@ -205,7 +207,7 @@ fun FlashScreen(
                 logContent.append(it).append("\n")
             }).apply {
                 if (code != 0) {
-                    text += context.getString(R.string.flash_error_output, code, err)
+                    text += resources.getString(R.string.flash_error_output, code, err)
                 }
                 if (showReboot) {
                     text += "\n\n\n"
@@ -232,7 +234,7 @@ fun FlashScreen(
                             "KernelSU_Next_install_log_${date}.log"
                         )
                         file.writeText(logContent.toString())
-                        snackBarHost.showSnackbar(context.getString(R.string.log_saved_to, BidiFormatter.getInstance().unicodeWrap(file.absolutePath)))
+                        snackBarHost.showSnackbar(resources.getString(R.string.log_saved_to, BidiFormatter.getInstance().unicodeWrap(file.absolutePath)))
                     }
                 },
                 scrollBehavior = scrollBehavior

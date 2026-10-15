@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -71,7 +72,12 @@ import com.rifsxd.ksunext.Natives
 import com.rifsxd.ksunext.R
 import com.rifsxd.ksunext.ksuApp
 import com.rifsxd.ksunext.ui.component.ConfirmResult
-import com.rifsxd.ksunext.ui.component.SearchAppBar
+import com.rifsxd.ksunext.ui.component.AsterListTopBar
+import com.rifsxd.ksunext.ui.component.AsterModuleCard
+import top.yukonga.miuix.kmp.basic.Scaffold as AsterScaffold
+import top.yukonga.miuix.kmp.basic.Text as AsterText
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.rifsxd.ksunext.ui.component.rememberConfirmDialog
 import com.rifsxd.ksunext.ui.component.rememberLoadingDialog
 import com.rifsxd.ksunext.ui.component.ShortcutDialog
@@ -112,7 +118,7 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
 
     val hideInstallButton = hasMagisk
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = MiuixScrollBehavior()
 
     var zipUri by remember { mutableStateOf<Uri?>(null) }
     var zipUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
@@ -163,17 +169,10 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
 
     val navBarPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
 
-    Scaffold(
+    AsterScaffold(
         topBar = {
-            SearchAppBar(
-                largeTitle = true,
-                title = {
-                    Text(
-                        text = stringResource(R.string.module),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
+            AsterListTopBar(
+                title = stringResource(R.string.module),
                 searchText = viewModel.search,
                 onSearchTextChange = { viewModel.search = it },
                 onClearClick = { viewModel.search = "" },
@@ -835,8 +834,10 @@ fun ModuleItem(
 
         return p
     }
-    
+
     val context = LocalContext.current
+
+    val resources = LocalResources.current
 
     if (showShortcutDialog) {
         ShortcutDialog(
@@ -928,7 +929,7 @@ fun ModuleItem(
                                 }
                             }
                         }
-                        
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
@@ -943,35 +944,50 @@ fun ModuleItem(
         }
     }
 
-    Card(
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
-            .combinedClickable(
-                onClick = onExpandToggle,
-                onLongClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    showMenu = true
-                }
-            )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            val context = LocalContext.current
+    val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+    val developerOptionsEnabled = prefs.getBoolean("enable_developer_options", false)
+    val useBanner = prefs.getBoolean("use_banner", true)
+    val filterZygiskModules = Natives.isZygiskEnabled() || !module.zygiskRequired
 
-            val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-
-            val useBanner = prefs.getBoolean("use_banner", true)
-
-            val textDecoration = if (!module.remove) null else TextDecoration.LineThrough
-
+    AsterModuleCard(
+        module = module,
+        checked = module.enabled,
+        updateAvailable = updateUrl.isNotEmpty() && !module.remove && !module.update,
+        onCheckedChange = onCheckChanged,
+        onOpen = { onClick(module) },
+        onUpdate = { onUpdate(module) },
+        onAction = {
+            navigator.navigate(ExecuteModuleActionScreenDestination(module.id))
+            viewModel.markNeedRefresh()
+        },
+        onUninstall = { onUninstall(module) },
+        onUndoUninstall = { onRestore(module) },
+        onExpand = onExpandToggle,
+        onLongPress = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            showMenu = true
+        },
+        onActionShortcut = {
+            shortcutType = "action"
+            dialogInitialIcon = normalizeIconPath(module.actionIconPath)
+            showShortcutDialog = true
+        },
+        onWebUiShortcut = {
+            shortcutType = "webui"
+            dialogInitialIcon = normalizeIconPath(module.webUiIconPath)
+            showShortcutDialog = true
+        },
+        onDonate = if (module.donate.isNotEmpty()) ({
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW, module.donate.toUri()))
+            } catch (_: Exception) {
+                Toast.makeText(context, resources.getString(R.string.module_invalid_donate_url), Toast.LENGTH_SHORT).show()
+            }
+        }) else null,
+        actionsEnabled = !module.remove && module.enabled && filterZygiskModules,
+        background = {
             if (useBanner && module.banner.isNotEmpty()) {
-                val fadeColor = MaterialTheme.colorScheme.surfaceContainerLow
+                val fadeColor = MiuixTheme.colorScheme.surface
 
                 Box(
                     modifier = Modifier
@@ -1035,109 +1051,28 @@ fun ModuleItem(
                     )
                 }
             }
-            Column {
-                val interactionSource = remember { MutableInteractionSource() }
 
-                val developerOptionsEnabled = prefs.getBoolean("enable_developer_options", false)
-
-                val filterZygiskModules = Natives.isZygiskEnabled() || !module.zygiskRequired
-
-                Column(
-                    modifier = Modifier
-                        .padding(20.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        val moduleVersion = stringResource(id = R.string.module_version)
-                        val moduleAuthor = stringResource(id = R.string.module_author)
-                        val moduleId = stringResource(id = R.string.module_id)
-                        val moduleVersionCode = stringResource(id = R.string.module_version_code)
-                        val moduleUpdateJson = stringResource(id = R.string.module_update_json)
-                        val moduleUpdateJsonEmpty = stringResource(id = R.string.module_update_json_empty)
-
-                        Column(
-                            modifier = Modifier.weight(1f).padding(end = 8.dp)
-                        ) {
-                            Text(
-                                text = module.name,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Medium,
-                                textDecoration = textDecoration
-                            )
-
-                            Text(
-                                text = "$moduleVersion: ${module.version}",
-                                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                                textDecoration = textDecoration
-                            )
-
-                            Text(
-                                text = "$moduleAuthor: ${module.author}",
-                                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                                textDecoration = textDecoration
-                            )
-
-                            if (developerOptionsEnabled) {
-
-                                Text(
-                                    text = "$moduleId: ${module.id}",
-                                    fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                    lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                    fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                                    textDecoration = textDecoration
-                                )
-
-                                Text(
-                                    text = "$moduleVersionCode: ${module.versionCode}",
-                                    fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                    lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                    fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                                    textDecoration = textDecoration
-                                )
-
-                                Text(
-                                    text = if (module.updateJson.isNotEmpty()) "$moduleUpdateJson: ${module.updateJson}" else "$moduleUpdateJson: $moduleUpdateJsonEmpty",
-                                    fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                    lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                    fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                                    textDecoration = textDecoration
-                                )
-                            }
-                        }
-
-                        Row(
-                            horizontalArrangement = Arrangement.End,
-                        ) {
-                            Switch(
-                                enabled = !module.update && !module.remove,
-                                checked = module.enabled,
-                                onCheckedChange = onCheckChanged,
-                                interactionSource = if (!module.hasWebUi) interactionSource else null
-                            )
-                        }
+        },
+        details = {
+            if (expanded || developerOptionsEnabled) {
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    AsterText(text = "${stringResource(R.string.module_id)}: ${module.id}",
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+                    if (developerOptionsEnabled) {
+                        AsterText(text = "${stringResource(R.string.module_version_code)}: ${module.versionCode}",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+                        AsterText(text = "${stringResource(R.string.module_update_json)}: " +
+                            module.updateJson.ifEmpty { stringResource(R.string.module_update_json_empty) },
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
                     }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = module.description,
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                        fontWeight = MaterialTheme.typography.bodySmall.fontWeight,
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 3,
-                        textDecoration = textDecoration
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
+                }
+            }
+        },
+        badges = {
+            Box(Modifier.padding(horizontal = 16.dp).padding(top = 8.dp)) {
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -1223,186 +1158,11 @@ fun ModuleItem(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    if (expanded) {
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-                        Spacer(modifier = Modifier.height(10.dp))
-                    }
-
-                    AnimatedVisibility(
-                        visible = expanded,
-                        enter = fadeIn() + expandVertically(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            if (module.hasActionScript) {
-                                FilledTonalButton(
-                                    modifier = Modifier.defaultMinSize(52.dp, 32.dp),
-                                    enabled = !module.remove && module.enabled && filterZygiskModules,
-                                    onClick = {
-                                        navigator.navigate(ExecuteModuleActionScreenDestination(module.id))
-                                        viewModel.markNeedRefresh()
-                                    },
-                                    contentPadding = ButtonDefaults.TextButtonContentPadding
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(20.dp),
-                                        imageVector = Icons.Outlined.Terminal,
-                                        contentDescription = null
-                                    )
-                                    if (!module.hasWebUi && updateUrl.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            text = stringResource(R.string.action),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize
-                                        )
-                                    }
-                                }
-
-                            }
-
-                            if (module.hasWebUi) {
-                                FilledTonalButton(
-                                    modifier = Modifier.defaultMinSize(52.dp, 32.dp),
-                                    enabled = !module.remove && module.enabled && filterZygiskModules,
-                                    onClick = { onClick(module) },
-                                    interactionSource = interactionSource,
-                                    contentPadding = ButtonDefaults.TextButtonContentPadding
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(20.dp),
-                                        imageVector = Icons.AutoMirrored.Outlined.Wysiwyg,
-                                        contentDescription = null
-                                    )
-                                    if (!module.hasActionScript && updateUrl.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.open)
-                                        )
-                                    }
-                                }
-
-                            }
-
-                            if (module.donate.isNotEmpty()) {
-                                val donateUrl = module.donate
-                                val ctx = LocalContext.current
-                                FilledTonalButton(
-                                    modifier = Modifier.defaultMinSize(52.dp, 32.dp),
-                                    enabled = !module.remove && module.enabled && filterZygiskModules,
-                                    onClick = {
-                                        try {
-                                            val intent = Intent(Intent.ACTION_VIEW, donateUrl.toUri())
-                                            ctx.startActivity(intent)
-                                        } catch (e: Exception) {
-                                            Toast.makeText(ctx, ctx.getString(R.string.module_invalid_donate_url), Toast.LENGTH_SHORT).show()
-                                        }
-                                    },
-                                    contentPadding = ButtonDefaults.TextButtonContentPadding
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(20.dp),
-                                        imageVector = Icons.Outlined.AttachMoney,
-                                        contentDescription = null
-                                    )
-                                    if (!module.hasActionScript && !module.hasWebUi && updateUrl.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.donate)
-                                        )
-                                    }
-                                }
-                            }
-
-
-                            if (updateUrl.isNotEmpty() && !module.remove && !module.update) {
-                                Button(
-                                    modifier = Modifier.defaultMinSize(52.dp, 32.dp),
-                                    enabled = !module.remove,
-                                    onClick = { onUpdate(module) },
-                                    shape = ButtonDefaults.textShape,
-                                    contentPadding = ButtonDefaults.TextButtonContentPadding
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(20.dp),
-                                        imageVector = Icons.Outlined.Download,
-                                        contentDescription = null
-                                    )
-                                    if (!module.hasActionScript || !module.hasWebUi || module.donate.isNotEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.module_update)
-                                        )
-                                    }
-                                }
-
-                            }
-
-                            if (module.remove) {
-                                FilledTonalButton(
-                                    modifier = Modifier.defaultMinSize(52.dp, 32.dp),
-                                    onClick = { onRestore(module) },
-                                    contentPadding = ButtonDefaults.TextButtonContentPadding
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(20.dp),
-                                        imageVector = Icons.Outlined.Restore,
-                                        contentDescription = null
-                                    )
-                                    if (!module.hasActionScript && !module.hasWebUi && updateUrl.isEmpty() && module.donate.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.restore)
-                                        )
-                                    }
-                                }
-                            } else {
-                                FilledTonalButton(
-                                    modifier = Modifier.defaultMinSize(52.dp, 32.dp),
-                                    enabled = true,
-                                    onClick = { onUninstall(module) },
-                                    colors = ButtonDefaults.filledTonalButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                    ),
-                                    contentPadding = ButtonDefaults.TextButtonContentPadding
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(20.dp),
-                                        imageVector = Icons.Outlined.Delete,
-                                        contentDescription = null
-                                    )
-                                    if (!module.hasActionScript && !module.hasWebUi && updateUrl.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.uninstall)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
-        }
-    }
+        },
+    )
 }
+
 
 fun formatSize(size: Long): String {
     if (size == 0L) return "null"

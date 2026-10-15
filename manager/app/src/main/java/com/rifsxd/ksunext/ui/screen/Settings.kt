@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.automirrored.filled.Undo
@@ -33,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import com.rifsxd.ksunext.ui.LocalScrollState
 import com.rifsxd.ksunext.ui.rememberScrollConnection
 import androidx.compose.ui.res.stringResource
@@ -68,6 +70,86 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.rifsxd.ksunext.ui.shell.GlobalLayoutDialog
+import com.rifsxd.ksunext.ui.shell.rememberGlobalLayout
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.All
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Layers
+import top.yukonga.miuix.kmp.icon.extended.Lock
+import top.yukonga.miuix.kmp.icon.extended.Sidebar
+import top.yukonga.miuix.kmp.icon.extended.Translate
+import top.yukonga.miuix.kmp.preference.ArrowPreference
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+
+/** Aster's subject-based Settings landing page, connected to KernelSU-Next settings. */
+@Destination<RootGraph>
+@Composable
+fun SettingScreen(navigator: DestinationsNavigator) {
+    val scrollBehavior = MiuixScrollBehavior()
+    val globalLayout by rememberGlobalLayout()
+    var showLayout by rememberSaveable { mutableStateOf(false) }
+    val aboutDialog = rememberCustomDialog { AboutDialog(it) }
+    val bottomPadding = com.rifsxd.ksunext.ui.shell.navigationBottomPadding()
+    MiuixScaffold(
+        topBar = { SettingsTopBar(R.string.settings, scrollBehavior) },
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().overScrollVertical()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
+            contentPadding = PaddingValues(
+                top = innerPadding.calculateTopPadding() + 12.dp,
+                bottom = innerPadding.calculateBottomPadding() + bottomPadding + 32.dp,
+            ),
+        ) {
+            item(key = "subjects") {
+                SettingsCard {
+                    ArrowPreference(
+                        title = stringResource(R.string.settings_section_appearance),
+                        startAction = { SettingsIcon(MiuixIcons.Layers) },
+                        onClick = { navigator.navigate(CustomizationScreenDestination) },
+                    )
+                    ArrowPreference(
+                        title = stringResource(R.string.settings_section_navigation),
+                        summary = stringResource(globalLayout.label),
+                        startAction = { SettingsIcon(MiuixIcons.Sidebar) },
+                        onClick = { showLayout = true },
+                    )
+                    if (Natives.isManager) {
+                        ArrowPreference(
+                            title = stringResource(R.string.settings_section_kernel),
+                            startAction = { SettingsIcon(MiuixIcons.All) },
+                            onClick = { navigator.navigate(KernelSuSettingsScreenDestination("kernel")) },
+                        )
+                        ArrowPreference(
+                            title = stringResource(R.string.aster_security),
+                            startAction = { SettingsIcon(MiuixIcons.Lock) },
+                            onClick = { navigator.navigate(KernelSuSettingsScreenDestination("security")) },
+                        )
+                    }
+                    ArrowPreference(
+                        title = stringResource(R.string.settings_section_general),
+                        startAction = { SettingsIcon(MiuixIcons.Translate) },
+                        onClick = { navigator.navigate(KernelSuSettingsScreenDestination("app")) },
+                    )
+                }
+            }
+            item(key = "about") {
+                SettingsCard {
+                    ArrowPreference(
+                        title = stringResource(R.string.about),
+                        startAction = { SettingsIcon(MiuixIcons.Info) },
+                        endActions = { VersionBadge(BuildConfig.VERSION_NAME) },
+                        onClick = { aboutDialog.show() },
+                    )
+                }
+            }
+        }
+    }
+    GlobalLayoutDialog(showLayout, globalLayout, onDismissRequest = { showLayout = false })
+}
 
 /**
  * @author weishu
@@ -76,14 +158,15 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Destination<RootGraph>
 @Composable
-fun SettingScreen(navigator: DestinationsNavigator) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+fun KernelSuSettingsScreen(navigator: DestinationsNavigator, section: String = "all") {
+    val scrollBehavior = MiuixScrollBehavior()
     val snackBarHost = LocalSnackbarHost.current
 
     val isManager = Natives.isManager
     val ksuVersion = if (isManager) Natives.version else null
 
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
@@ -125,7 +208,7 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                 }
             }
             loadingDialog.hide()
-            snackBarHost.showSnackbar(context.getString(R.string.log_saved))
+            snackBarHost.showSnackbar(resources.getString(R.string.log_saved))
         }
     }
 
@@ -160,13 +243,20 @@ fun SettingScreen(navigator: DestinationsNavigator) {
         avcSpoofStatus = getFeatureStatus("avc_spoof")
     }
 
-    Scaffold(
+    MiuixScaffold(
         topBar = {
-            TopBar(scrollBehavior = scrollBehavior)
+            SettingsTopBar(
+                title = when (section) {
+                    "kernel" -> R.string.settings_section_kernel
+                    "security" -> R.string.aster_security
+                    else -> R.string.aster_app_settings
+                },
+                scrollBehavior = scrollBehavior,
+                navigator = navigator,
+            )
         },
-        snackbarHost = { SnackbarHost(snackBarHost, modifier = Modifier.padding(bottom = navBarPadding)) },
-        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
     ) { innerPadding ->
+        Box(Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -182,10 +272,11 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                 .verticalScroll(rememberScrollState())
                 .padding(top = 8.dp)
                 .padding(bottom = navBarPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .overScrollVertical(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (ksuVersion != null) {
+                if (section == "all" || section == "kernel") {
                 KernelFeaturesCard(
                     suCompatStatus = suCompatStatus,
                     kernelUmountStatus = kernelUmountStatus,
@@ -200,12 +291,16 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                     avcSpoofStatus = avcSpoofStatus,
                     scope = scope
                 )
+                }
+                if (section == "all" || section == "security") {
                 SecurityCard(
                     navigator = navigator,
                     loadingDialog = loadingDialog
                 )
+                }
             }
 
+            if (section == "all" || section == "app") {
             AppSettingsCard(
                 navigator = navigator,
                 prefs = prefs,
@@ -216,8 +311,11 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                 context = context,
                 isUnrooted = isUnrooted
             )
+            }
 
             Spacer(Modifier)
+        }
+        SnackbarHost(snackBarHost, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = navBarPadding))
         }
     }
 }
@@ -238,6 +336,7 @@ private fun KernelFeaturesCard(
     scope: kotlinx.coroutines.CoroutineScope
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val suCompatSupported = suCompatStatus == "supported"
     val kernelUmountSupported = kernelUmountStatus == "supported"
     val sulogSupported = sulogStatusParam == "supported"
@@ -246,7 +345,7 @@ private fun KernelFeaturesCard(
     val selinuxHideSupported = selinuxHideStatus == "supported"
     val avcSpoofSupported = avcSpoofStatus == "supported"
 
-    AsterSettingsGroup(stringResource(R.string.aster_kernel_features)) {
+    SettingsSectionCard(stringResource(R.string.aster_kernel_features)) {
         Column(
             modifier = Modifier.padding(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -427,7 +526,7 @@ private fun KernelFeaturesCard(
                         else -> {
                             withContext(Dispatchers.Main) {
                                 Toast.makeText(
-                                    context, context.getString(R.string.settings_selinux_hide_failed, status),
+                                    context, resources.getString(R.string.settings_selinux_hide_failed, status),
                                     Toast.LENGTH_LONG
                                 ).show()
                             }
@@ -592,7 +691,7 @@ private fun SecurityCard(
         }
     }
 
-    AsterSettingsGroup(stringResource(R.string.aster_security)) {
+    SettingsSectionCard(stringResource(R.string.aster_security)) {
         Column(
             modifier = Modifier.padding(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -616,75 +715,32 @@ private fun SecurityCard(
             }
 
             if (isGkiKernel) {
-                ListItem(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable(enabled = !susfsLoadInProgress) { showSusfsLoadSheet = true },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    leadingContent = { Icon(Icons.Filled.Memory, null) },
-                    headlineContent = {
-                        Text(
-                            text = stringResource(R.string.susfs_load_action),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    },
-                    supportingContent = {
-                        Text(stringResource(R.string.susfs_load_summary))
-                    }
+                ArrowPreference(
+                    title = stringResource(R.string.susfs_load_action),
+                    summary = stringResource(R.string.susfs_load_summary),
+                    startAction = { SettingsIcon(Icons.Filled.Memory) },
+                    enabled = !susfsLoadInProgress,
+                    onClick = { showSusfsLoadSheet = true },
                 )
             }
 
-            ListItem(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { navigator.navigate(AppProfileTemplateScreenDestination) },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                leadingContent = { Icon(Icons.Filled.Fence, null) },
-                headlineContent = {
-                    Text(
-                        text = stringResource(R.string.settings_profile_template),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
-                supportingContent = {
-                    Text(stringResource(R.string.settings_profile_template_summary))
-                }
+            ArrowPreference(
+                title = stringResource(R.string.settings_profile_template),
+                summary = stringResource(R.string.settings_profile_template_summary),
+                startAction = { SettingsIcon(Icons.Filled.Fence) },
+                onClick = { navigator.navigate(AppProfileTemplateScreenDestination) },
             )
 
-            ListItem(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { navigator.navigate(BackupRestoreScreenDestination) },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                leadingContent = { Icon(Icons.Filled.Backup, null) },
-                headlineContent = {
-                    Text(
-                        text = stringResource(R.string.backup_restore),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+            ArrowPreference(
+                title = stringResource(R.string.backup_restore),
+                startAction = { SettingsIcon(Icons.Filled.Backup) },
+                onClick = { navigator.navigate(BackupRestoreScreenDestination) },
             )
 
-            ListItem(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { navigator.navigate(DeveloperScreenDestination) },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                leadingContent = { Icon(Icons.Filled.DeveloperBoard, null) },
-                headlineContent = {
-                    Text(
-                        text = stringResource(R.string.developer),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+            ArrowPreference(
+                title = stringResource(R.string.developer),
+                startAction = { SettingsIcon(Icons.Filled.DeveloperBoard) },
+                onClick = { navigator.navigate(DeveloperScreenDestination) },
             )
 
             if (Natives.isLkmMode) {
@@ -810,7 +866,7 @@ private fun AppSettingsCard(
     context: Context,
     isUnrooted: Boolean
 ) {
-    AsterSettingsGroup(stringResource(R.string.aster_app_settings)) {
+    SettingsSectionCard(stringResource(R.string.aster_app_settings)) {
         Column(
             modifier = Modifier.padding(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -859,106 +915,59 @@ private fun AppSettingsCard(
                 }
             }
 
-            ListItem(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .toggleable(
-                        value = requireBiometric,
-                        role = Role.Switch,
-                        onValueChange = onRequireBiometricChange
-                    ),
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    leadingContent = { Icon(Icons.Filled.Lock, null) },
-                    headlineContent = {
-                        Text(
-                            text = stringResource(R.string.settings_app_lock),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    },
-                    supportingContent = {
-                        Column(modifier = Modifier.animateContentSize()) {
-                            Text(stringResource(R.string.settings_app_lock_summary))
-                            if (requireBiometric) {
-                                Box {
-                                    Text(
-                                        text = "${stringResource(R.string.settings_app_lock_timeout)}: $timeoutLabel",
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier
-                                            .padding(top = 4.dp)
-                                            .clickable { showTimeoutMenu = true }
-                                            .padding(vertical = 4.dp)
-                                    )
-                                    DropdownMenu(
-                                        expanded = showTimeoutMenu,
-                                        onDismissRequest = { showTimeoutMenu = false }
-                                    ) {
-                                        timeoutOptions.forEach { (time, stringRes) ->
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(stringRes)) },
-                                                trailingIcon = {
-                                                    Icon(
-                                                        imageVector = if (appLockTimeout == time) Icons.Filled.RadioButtonChecked else Icons.Filled.RadioButtonUnchecked,
-                                                        contentDescription = null,
-                                                        tint = if (appLockTimeout == time) androidx.compose.material3.MaterialTheme.colorScheme.primary else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                },
-                                                onClick = {
-                                                    appLockTimeout = time
-                                                    prefs.edit { putLong("app_lock_timeout", time) }
-                                                    showTimeoutMenu = false
-                                                }
+            IndicatorSwitchPreference(
+                checked = requireBiometric,
+                onCheckedChange = onRequireBiometricChange,
+                title = stringResource(R.string.settings_app_lock),
+                summary = stringResource(R.string.settings_app_lock_summary),
+                startAction = { SettingsIcon(MiuixIcons.Lock) },
+                bottomAction = {
+                    if (requireBiometric) {
+                        Box {
+                            Text(
+                                text = "${stringResource(R.string.settings_app_lock_timeout)}: $timeoutLabel",
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.clickable { showTimeoutMenu = true }.padding(vertical = 8.dp),
+                            )
+                            DropdownMenu(
+                                expanded = showTimeoutMenu,
+                                onDismissRequest = { showTimeoutMenu = false },
+                            ) {
+                                timeoutOptions.forEach { (time, stringRes) ->
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(stringRes)) },
+                                        trailingIcon = {
+                                            Icon(
+                                                imageVector = if (appLockTimeout == time) Icons.Filled.RadioButtonChecked else Icons.Filled.RadioButtonUnchecked,
+                                                contentDescription = null,
+                                                tint = if (appLockTimeout == time) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
-                                        }
-                                    }
+                                        },
+                                        onClick = {
+                                            appLockTimeout = time
+                                            prefs.edit { putLong("app_lock_timeout", time) }
+                                            showTimeoutMenu = false
+                                        },
+                                    )
                                 }
                             }
                         }
-                    },
-                    trailingContent = {
-                        Switch(
-                            checked = requireBiometric,
-                            onCheckedChange = onRequireBiometricChange
-                        )
                     }
-                )
+                },
+            )
 
-
-            ListItem(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { navigator.navigate(CustomizationScreenDestination) },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                leadingContent = { Icon(Icons.Filled.Palette, null) },
-                headlineContent = {
-                    Text(
-                        text = stringResource(R.string.customization),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+            ArrowPreference(
+                title = stringResource(R.string.customization),
+                startAction = { SettingsIcon(Icons.Filled.Palette) },
+                onClick = { navigator.navigate(CustomizationScreenDestination) },
             )
 
             var showBottomsheet by remember { mutableStateOf(false) }
 
-            ListItem(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { showBottomsheet = true },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                leadingContent = { Icon(Icons.Filled.BugReport, null) },
-                headlineContent = {
-                        Text(
-                            text = stringResource(
-                                if (isUnrooted) R.string.export_log_unrooted else R.string.export_log
-                            ),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                }
+            ArrowPreference(
+                title = stringResource(if (isUnrooted) R.string.export_log_unrooted else R.string.export_log),
+                startAction = { SettingsIcon(Icons.Filled.BugReport) },
+                onClick = { showBottomsheet = true },
             )
 
             if (showBottomsheet) {
@@ -1000,20 +1009,10 @@ private fun AppSettingsCard(
                 )
             }
 
-            ListItem(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { aboutDialog.show() },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                leadingContent = { Icon(Icons.Filled.ContactPage, null) },
-                headlineContent = {
-                    Text(
-                        text = stringResource(R.string.about),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+            ArrowPreference(
+                title = stringResource(R.string.about),
+                startAction = { SettingsIcon(Icons.Filled.ContactPage) },
+                onClick = { aboutDialog.show() },
             )
         }
     }
@@ -1092,16 +1091,17 @@ fun UninstallItem(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val uninstallConfirmDialog = rememberConfirmDialog()
     val showTodo = {
-        Toast.makeText(context, context.getString(R.string.feature_not_implemented), Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, resources.getString(R.string.feature_not_implemented), Toast.LENGTH_SHORT).show()
     }
     val uninstallDialog = rememberUninstallDialog { uninstallType ->
         scope.launch {
             val result = uninstallConfirmDialog.awaitConfirm(
-                title = context.getString(uninstallType.title),
-                content = context.getString(uninstallType.message)
+                title = resources.getString(uninstallType.title),
+                content = resources.getString(uninstallType.message)
             )
             if (result == ConfirmResult.Confirmed) {
                 withLoading {
@@ -1122,17 +1122,11 @@ fun UninstallItem(
         }
     }
     val uninstall = stringResource(id = R.string.settings_uninstall)
-    ListItem(
-        modifier = modifier.clickable { uninstallDialog.show() },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        leadingContent = { Icon(Icons.Filled.Delete, uninstall) },
-        headlineContent = {
-            Text(
-                text = uninstall,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
+    ArrowPreference(
+        modifier = modifier,
+        title = uninstall,
+        startAction = { SettingsIcon(Icons.Filled.Delete) },
+        onClick = { uninstallDialog.show() },
     )
 }
 
@@ -1188,51 +1182,6 @@ fun rememberUninstallDialog(onSelected: (UninstallType) -> Unit): DialogHandle {
             ) { index, _ ->
                 selection = options[index]
             }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TopBar(
-    scrollBehavior: TopAppBarScrollBehavior? = null,
-) {
-    LargeTopAppBar(
-        title = {
-            Text(
-                text = stringResource(R.string.settings),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        colors = TopAppBarDefaults.largeTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            scrolledContainerColor = MaterialTheme.colorScheme.background,
-        ),
-        windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
-        scrollBehavior = scrollBehavior
-    )
-}
-
-/** Aster-inspired section labels and quiet, rounded preference groups. */
-@Composable
-private fun AsterSettingsGroup(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = title,
-            modifier = Modifier.padding(horizontal = 16.dp),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            content = content,
         )
     }
 }

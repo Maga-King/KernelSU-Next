@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="settings_section_appearance">外观</string>
+    <string name="settings_section_navigation">导航与外壳</string>
+    <string name="settings_section_kernel">内核</string>
+    <string name="settings_section_general">通用</string>
+</resources>

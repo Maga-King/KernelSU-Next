@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import com.rifsxd.ksunext.ui.LocalScrollState
@@ -89,6 +90,7 @@ fun AppProfileTemplateScreen(
         topBar = {
             val clipboard = LocalClipboard.current
             val context = LocalContext.current
+            val resources = LocalResources.current
             val showToast = fun(msg: String) {
                 scope.launch(Dispatchers.Main) {
                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
@@ -101,12 +103,12 @@ fun AppProfileTemplateScreen(
                             scope.launch {
                                 clipboard.getClipEntry()?.clipData?.getItemAt(0)?.text?.toString()?.let {
                                     if (it.isEmpty()) {
-                                        showToast(context.getString(R.string.app_profile_template_import_empty))
+                                        showToast(resources.getString(R.string.app_profile_template_import_empty))
                                         return@let
                                     }
                                     viewModel.importTemplates(
                                         it, {
-                                            showToast(context.getString(R.string.app_profile_template_import_success))
+                                            showToast(resources.getString(R.string.app_profile_template_import_success))
                                             viewModel.fetchTemplates(false)
                                         },
                                         showToast
@@ -118,7 +120,7 @@ fun AppProfileTemplateScreen(
                             scope.launch {
                                 viewModel.exportTemplates(
                                     {
-                                        showToast(context.getString(R.string.app_profile_template_export_empty))
+                                        showToast(resources.getString(R.string.app_profile_template_export_empty))
                                     },
                                     {
                                         scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("template", it))) }

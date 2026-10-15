@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.graphics.Brush
@@ -134,6 +135,7 @@ fun ModuleRepoScreen(navigator: DestinationsNavigator) {
     } else null
     val snackBarHost = LocalSnackbarHost.current
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
 
     val isManager = Natives.isManager
@@ -222,7 +224,7 @@ fun ModuleRepoScreen(navigator: DestinationsNavigator) {
                 .filter { module -> seen.add("${module.name}||${module.repoUrl}") }
 
             if (visibleModules.isEmpty()) {
-                moduleState = ModuleRepoState.Error(context.getString(R.string.repo_no_modules))
+                moduleState = ModuleRepoState.Error(resources.getString(R.string.repo_no_modules))
                 return
             }
 
@@ -262,7 +264,7 @@ fun ModuleRepoScreen(navigator: DestinationsNavigator) {
                 }
             }
         } catch (e: Exception) {
-            moduleState = ModuleRepoState.Error(e.message ?: context.getString(R.string.unknown_error))
+            moduleState = ModuleRepoState.Error(e.message ?: resources.getString(R.string.unknown_error))
         }
     }
 
@@ -655,10 +657,10 @@ fun ModuleRepoScreen(navigator: DestinationsNavigator) {
                                                 context,
                                                 selectedModule.downloadUrl,
                                                 fileName,
-                                                context.getString(R.string.repo_download_progress, selectedModule.name)
+                                                resources.getString(R.string.repo_download_progress, selectedModule.name)
                                             )
                                         } catch (e: Exception) {
-                                            snackBarHost.showSnackbar(context.getString(R.string.repo_download_error, e.message.orEmpty()))
+                                            snackBarHost.showSnackbar(resources.getString(R.string.repo_download_error, e.message.orEmpty()))
                                             downloadingModuleName = null
                                         }
                                     }

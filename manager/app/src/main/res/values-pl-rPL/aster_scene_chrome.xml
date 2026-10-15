@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_appearance">Wygląd pulpitu</string>
+    <string name="home_scene_clock_style_stacked">Czas w dwóch wierszach</string>
+    <string name="home_scene_clock_style_stacked_summary">Godziny nad minutami, tak jak pasek zawsze je rysował.</string>
+    <string name="home_scene_clock_style_inline">Czas w jednym wierszu</string>
+    <string name="home_scene_clock_style_inline_summary">Jedna linia czasu, data pod spodem.</string>
+    <string name="home_scene_clock_style_analog">Tarcza</string>
+    <string name="home_scene_clock_style_analog_summary">Tarcza zegarka zamiast cyfr.</string>
+    <string name="home_scene_clock_style_date">Tylko data</string>
+    <string name="home_scene_clock_style_date_summary">Dzień tygodnia i data, bez godziny.</string>
+    <string name="home_scene_clock_meridiem_date">%1$s · %2$s</string>
+    <string name="global_layout_title">Styl pulpitu</string>
+    <string name="global_layout_panorama">Panorama</string>
+    <string name="global_layout_panorama_summary">Scena z tapetą na pulpicie, pływająca nawigacja na pozostałych stronach.</string>
+    <string name="global_layout_standard">Standardowy</string>
+    <string name="global_layout_standard_summary">Klasyczny dolny pasek lub panel boczny na każdej stronie.</string>
+</resources>

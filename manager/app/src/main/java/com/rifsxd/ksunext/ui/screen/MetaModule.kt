@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.graphics.Brush
@@ -99,6 +100,7 @@ fun MetaModuleScreen(navigator: DestinationsNavigator) {
     } else null
     val snackBarHost = LocalSnackbarHost.current
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
@@ -164,7 +166,7 @@ fun MetaModuleScreen(navigator: DestinationsNavigator) {
             val baseList = withContext(Dispatchers.IO) { fetchMetaModulesFromJson(modulesJsonUrl) }
 
             if (baseList == null) {
-                moduleState = MetaModuleState.Error(context.getString(R.string.metamodule_load_failed))
+                moduleState = MetaModuleState.Error(resources.getString(R.string.metamodule_load_failed))
                 return
             }
 
@@ -208,7 +210,7 @@ fun MetaModuleScreen(navigator: DestinationsNavigator) {
                 }
             }
         } catch (e: Exception) {
-            moduleState = MetaModuleState.Error(e.message ?: context.getString(R.string.unknown_error))
+            moduleState = MetaModuleState.Error(e.message ?: resources.getString(R.string.unknown_error))
         }
     }
 
@@ -305,10 +307,10 @@ fun MetaModuleScreen(navigator: DestinationsNavigator) {
                                                 context,
                                                 selectedModule.downloadUrl,
                                                 fileName,
-                                                context.getString(R.string.repo_download_progress, selectedModule.name)
+                                                resources.getString(R.string.repo_download_progress, selectedModule.name)
                                             )
                                         } catch (e: Exception) {
-                                            snackBarHost.showSnackbar(context.getString(R.string.repo_download_error, e.message.orEmpty()))
+                                            snackBarHost.showSnackbar(resources.getString(R.string.repo_download_error, e.message.orEmpty()))
                                             downloadingModuleId = null
                                         }
                                     }

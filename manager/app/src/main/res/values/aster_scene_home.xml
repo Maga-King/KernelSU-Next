@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Aster feature translations are included where available upstream.
+         Other KernelSU locales intentionally fall back to the English strings below. -->
+    <string name="refresh_pulling" tools:ignore="MissingTranslation">Pull down to refresh</string>
+    <string name="refresh_release" tools:ignore="MissingTranslation">Release to refresh</string>
+    <string name="refresh_refreshing" tools:ignore="MissingTranslation">Refreshing</string>
+    <string name="refresh_complete" tools:ignore="MissingTranslation">Refreshed</string>
+    <string name="home_more" tools:ignore="MissingTranslation">More</string>
+    <string name="home_wallpaper_choose" tools:ignore="MissingTranslation">Choose image</string>
+    <string name="home_wallpaper_change" tools:ignore="MissingTranslation">Change image</string>
+    <string name="home_wallpaper_remove" tools:ignore="MissingTranslation">Remove image</string>
+    <string name="home_wallpaper_empty" tools:ignore="MissingTranslation">Choose an image to personalize Home. Root diagnostics stay unchanged.</string>
+    <string name="home_wallpaper_night_switch" tools:ignore="MissingTranslation">Use another wallpaper in dark mode</string>
+    <string name="home_wallpaper_night_switch_summary" tools:ignore="MissingTranslation">The dark theme shows the wallpaper chosen below. Until one is chosen, it keeps the light one.</string>
+    <string name="home_wallpaper_slot_light" tools:ignore="MissingTranslation">Light</string>
+    <string name="home_wallpaper_slot_night" tools:ignore="MissingTranslation">Dark</string>
+    <string name="home_wallpaper_night_choose" tools:ignore="MissingTranslation">Choose dark wallpaper</string>
+    <string name="home_wallpaper_night_empty" tools:ignore="MissingTranslation">No dark wallpaper chosen yet, so the dark theme uses the light one.</string>
+    <string name="home_wallpaper_missing" tools:ignore="MissingTranslation">The selected image is unavailable. Choose it again.</string>
+    <string name="home_wallpaper_error" tools:ignore="MissingTranslation">The selected image could not be read. Choose another image.</string>
+    <string name="home_wallpaper_loading" tools:ignore="MissingTranslation">Applying image...</string>
+    <string name="home_wallpaper_scale" tools:ignore="MissingTranslation">Scale</string>
+    <string name="home_wallpaper_horizontal" tools:ignore="MissingTranslation">Horizontal position</string>
+    <string name="home_wallpaper_vertical" tools:ignore="MissingTranslation">Vertical position</string>
+    <string name="home_scene_greeting_morning" translatable="false">Good morning</string>
+    <string name="home_scene_greeting_afternoon" translatable="false">Good afternoon</string>
+    <string name="home_scene_greeting_evening" translatable="false">Good evening</string>
+    <string name="home_scene_greeting_night" translatable="false">Good night</string>
+    <string-array name="home_scene_quotes" translatable="false">
+        <item>微睡みの中で、夢を見る</item>
+        <item>透き通る青空、どこまでも</item>
+        <item>君の隣で、風を感じて</item>
+        <item>夢の続きを、もう少しだけ</item>
+        <item>静かな朝に、心ほどけて</item>
+        <item>星が落ちる前に、君に会いたい</item>
+        <item>光の中で、君を探して</item>
+    </string-array>
+    <string name="scene_expand" tools:ignore="MissingTranslation">Expand wallpaper</string>
+    <string name="scene_restore" tools:ignore="MissingTranslation">Show sidebar</string>
+    <string name="aster_scene_mode" tools:ignore="MissingTranslation">Working mode</string>
+    <string name="reboot_soft" tools:ignore="MissingTranslation">Soft reboot</string>
+    <string name="home_more_menu_feedback_or_suggestion" tools:ignore="MissingTranslation">Feedback or suggestion</string>
+    <string name="mode_select_page_title" tools:ignore="MissingTranslation">Install</string>
+    <string name="home_more_menu_about" tools:ignore="MissingTranslation">About</string>
+    <string name="home_dialog_uninstall_title" tools:ignore="MissingTranslation">Uninstall</string>
+    <string name="home_update_available_summary" tools:ignore="MissingTranslation">Tap to view the release notes.</string>
+    <string name="home_scene_labels_switch" tools:ignore="MissingTranslation">Rail labels</string>
+    <string name="home_scene_labels_switch_summary" tools:ignore="MissingTranslation">Show a label under each rail icon.</string>
+    <string name="home_scene_quote_title" tools:ignore="MissingTranslation">Home slogan</string>
+    <string name="home_scene_clock_style" tools:ignore="MissingTranslation">Clock style</string>
+    <string name="home_scene_clock_switch" tools:ignore="MissingTranslation">Scene clock and battery</string>
+    <string name="home_scene_clock_switch_summary" tools:ignore="MissingTranslation">Show the scene clock and battery at the top of the rail.</string>
+    <string name="home_scene_quote_hint" tools:ignore="MissingTranslation">One line each, several take turns. Empty keeps the built-in lines.</string>
+    <string name="home_wallpaper_color_deriving" tools:ignore="MissingTranslation">Reading the wallpaper colours…</string>
+    <string name="home_wallpaper_color_failed" tools:ignore="MissingTranslation">No colour could be read from this wallpaper.</string>
+    <string name="home_wallpaper_color_retry" tools:ignore="MissingTranslation">Read again</string>
+    <string name="home_wallpaper_color_seed" tools:ignore="MissingTranslation">Derived colour</string>
+    <string name="home_wallpaper_color_theme" tools:ignore="MissingTranslation">Wallpaper colours</string>
+    <string name="home_wallpaper_color_theme_summary" tools:ignore="MissingTranslation">Derive the app colours from this wallpaper.</string>
+    <string name="reboot_download_confirm" tools:ignore="MissingTranslation">Reboot into Download mode? The device will boot into the firmware flashing interface.</string>
+    <string name="reboot_edl_confirm" tools:ignore="MissingTranslation">Reboot into EDL (Emergency Download) mode? The screen will stay black and the device can only be recovered with a deep flash tool.</string>
+    <string name="settings_wallpaper_color_theme_no_wallpaper" tools:ignore="MissingTranslation">Choose a Home wallpaper first.</string>
+</resources>

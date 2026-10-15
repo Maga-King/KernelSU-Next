@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Aster feature translations are included where available upstream.
+         Other KernelSU locales intentionally fall back to the English strings below. -->
+  <string name="theme_color_source_wallpaper" tools:ignore="MissingTranslation">Home wallpaper</string>
+  <string name="theme_color_source_system" tools:ignore="MissingTranslation">System palette</string>
+  <string name="theme_color_source_preset" tools:ignore="MissingTranslation">Custom colour</string>
+  <string name="theme_style_tonal_spot_summary" tools:ignore="MissingTranslation">Let Android spread the seed colour evenly over the scheme.</string>
+  <string name="theme_style_neutral_summary" tools:ignore="MissingTranslation">Nearly grey, with colour kept for what needs attention.</string>
+  <string name="theme_style_vibrant_summary" tools:ignore="MissingTranslation">The seed colour at its strongest, for a bold look.</string>
+  <string name="theme_style_expressive_summary" tools:ignore="MissingTranslation">Hue and contrast pulled apart, so surfaces differ clearly.</string>
+  <string name="theme_style_rainbow_summary" tools:ignore="MissingTranslation">Takes the seed hue around the colour wheel for its accents.</string>
+  <string name="theme_style_fruit_salad_summary" tools:ignore="MissingTranslation">Several hues at once, the most colourful of the set.</string>
+  <string name="theme_style_monochrome_summary" tools:ignore="MissingTranslation">One hue only, so colour never carries meaning on its own.</string>
+  <string name="theme_style_fidelity_summary" tools:ignore="MissingTranslation">Stays close to the seed colour and tints it less.</string>
+  <string name="theme_style_content_summary" tools:ignore="MissingTranslation">Draws the accents out of the seed itself, not a fixed model.</string>
+  <string name="theme_spec_2021" tools:ignore="MissingTranslation">M3 2021</string>
+  <string name="theme_spec_2021_summary" tools:ignore="MissingTranslation">The 2021 tones: a calm, even spread.</string>
+  <string name="theme_spec_2025" tools:ignore="MissingTranslation">M3 Expressive 2025</string>
+  <string name="theme_spec_2025_summary" tools:ignore="MissingTranslation">The 2025 tones: stronger accents, clearer steps between surfaces.</string>
+</resources>
