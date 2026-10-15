@@ -62,6 +62,8 @@ in the graphics layer; theme and shell observe only the palette fields they actu
 
 Initial Root shell acquisition, module counts, and module-update HTTP checks run outside UI
 composition/on IO. Automatic Root requests and the original KSUN authorization checks remain.
+Pull-to-refresh reloads Home data without restarting the Activity. Core refresh work controls
+the refresh indicator; card data effects re-run without clearing their previous values or UI state.
 The manager-only daemon installation order is unchanged. Dark mode bridges Material's content
 foreground into the Miuix shell so legacy cards retain readable text.
 
@@ -73,6 +75,8 @@ Cold-start recording showed the saved wallpaper without the empty-image selectio
 Appearance, nested clock and quote dialogs, Settings appearance details, and the layout dialog
 in both panorama and standard mode were opened and dismissed without a process crash. The
 saved wallpaper and custom quote remained. Dark-mode issue/contributor cards were visually checked.
+Repeated pull-to-refresh retained the same ActivityRecord and an expanded device-information card;
+the previous implementation created a new ActivityRecord on every pull.
 
 On the optimized preview, eight Home/Settings round trips recorded 613 frames, 23 janky (3.75%),
 p95 29 ms and p99 40 ms. Five appearance-sheet open/close cycles recorded 455 frames,

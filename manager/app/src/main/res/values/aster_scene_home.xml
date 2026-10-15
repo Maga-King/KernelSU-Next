@@ -61,4 +61,5 @@
     <string name="reboot_download_confirm" tools:ignore="MissingTranslation">Reboot into Download mode? The device will boot into the firmware flashing interface.</string>
     <string name="reboot_edl_confirm" tools:ignore="MissingTranslation">Reboot into EDL (Emergency Download) mode? The screen will stay black and the device can only be recovered with a deep flash tool.</string>
     <string name="settings_wallpaper_color_theme_no_wallpaper" tools:ignore="MissingTranslation">Choose a Home wallpaper first.</string>
+    <string name="home_refresh_failed" tools:ignore="MissingTranslation">Unable to refresh Home. Try again.</string>
 </resources>

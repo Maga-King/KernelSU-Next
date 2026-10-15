@@ -111,11 +111,15 @@ import kotlinx.coroutines.withContext
 @Destination<RootGraph>(start = true)
 @Composable
 fun HomeScreen(navigator: DestinationsNavigator) {
-    val kernelVersion = remember { getKernelVersion() }
+    var kernelVersion by remember { mutableStateOf(getKernelVersion()) }
+    var refreshToken by remember { mutableIntStateOf(0) }
+    var refreshing by remember { mutableStateOf(false) }
+    val refreshScope = rememberCoroutineScope()
+    val refreshModuleViewModel: ModuleViewModel = viewModel()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
-    val isManager = Natives.isManager
-    val fullFeatured = Natives.isFullFeatured()
+    val isManager = remember(refreshToken) { Natives.isManager }
+    val fullFeatured = remember(refreshToken) { Natives.isFullFeatured() }
     val ksuVersion = if (isManager) Natives.version else null
     val ksuVersionTag = if (isManager) Natives.getVersionTag() else null
     val kernelUAPIVersion = if (isManager) Natives.kernelUAPIVersion else null
@@ -124,6 +128,33 @@ fun HomeScreen(navigator: DestinationsNavigator) {
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     val developerOptionsEnabled = prefs.getBoolean("enable_developer_options", false)
+    val refreshFailedText = stringResource(R.string.home_refresh_failed)
+    val refreshHome: () -> Unit = {
+        if (!refreshing) {
+            // Gate immediately, before dispatching work, so repeated pulls cannot overlap.
+            refreshing = true
+            refreshScope.launch {
+                try {
+                    val refreshedKernel = withContext(Dispatchers.IO) { getKernelVersion() }
+                    if (Natives.isFullFeatured()) {
+                        refreshModuleViewModel.fetchModuleList().join()
+                    }
+                    currentCoroutineContext().ensureActive()
+                    kernelVersion = refreshedKernel
+                    // Re-read the existing native/root status and restart only data effects.
+                    // Card state, scroll, wallpaper and the navigation shell keep their identity.
+                    refreshToken++
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    android.util.Log.w("Home", "Unable to refresh Home data", error)
+                    Toast.makeText(context, refreshFailedText, Toast.LENGTH_SHORT).show()
+                } finally {
+                    refreshing = false
+                }
+            }
+        }
+    }
     
     // Get scroll state for bottom bar tracking
     val bottomBarScrollState = LocalScrollState.current
@@ -206,6 +237,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             else -> "Built-in"
         },
         deviceName = "${Build.MANUFACTURER.replaceFirstChar { it.titlecase() }} ${Build.MODEL}",
+        checking = refreshing,
     )
     val homeContent: @Composable () -> Unit = {
             if (installed && isSuCompatDisabled()) {
@@ -221,7 +253,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             if (fullFeatured) {
                 AsterResponsivePair(
                     first = {
-                        SuperuserCard(onClick = {
+                        SuperuserCard(refreshToken = refreshToken, onClick = {
                             navigator.navigate(SuperUserScreenDestination) {
                                 popUpTo(NavGraphs.root.startRoute) { saveState = true }
                                 launchSingleTop = true
@@ -230,7 +262,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                         })
                     },
                     second = {
-                        ModuleCard(onClick = {
+                        ModuleCard(refreshToken = refreshToken, onClick = {
                             navigator.navigate(ModuleScreenDestination) {
                                 popUpTo(NavGraphs.root.startRoute) { saveState = true }
                                 launchSingleTop = true
@@ -294,10 +326,10 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                 LocalContext.current.getSharedPreferences("settings", Context.MODE_PRIVATE)
                     .getBoolean("check_update", true)
             if (checkUpdate) {
-                UpdateCard()
+                UpdateCard(refreshToken = refreshToken)
             }
 
-            InfoCard(autoExpand = developerOptionsEnabled)
+            InfoCard(autoExpand = developerOptionsEnabled, refreshToken = refreshToken)
             IssueReportCard()
             ContributorsCard()
             Spacer(Modifier)
@@ -327,7 +359,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             wallpaperState = wallpaperState,
             onTools = { showTools = true },
             onAppearance = { showWallpaperSheet = true },
-            onRefresh = { restartActivity(context) },
+            onRefresh = refreshHome,
         ) {
             if (!installed) {
                 top.yukonga.miuix.kmp.basic.Button(
@@ -443,7 +475,7 @@ private fun AsterResponsivePair(first: @Composable () -> Unit, second: @Composab
 }
 
 @Composable
-private fun SuperuserCard(onClick: (() -> Unit)? = null) {
+private fun SuperuserCard(refreshToken: Int = 0, onClick: (() -> Unit)? = null) {
     val count = getSuperuserCount()
     AsterCountCard(
         label = stringResource(if (count <= 1) R.string.home_superuser_count_singular else R.string.home_superuser_count_plural),
@@ -455,20 +487,20 @@ private fun SuperuserCard(onClick: (() -> Unit)? = null) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ModuleCard(onClick: (() -> Unit)? = null) {
+private fun ModuleCard(refreshToken: Int = 0, onClick: (() -> Unit)? = null) {
     val moduleViewModel: ModuleViewModel = viewModel()
     val modules = moduleViewModel.moduleList
     val lifecycleOwner = LocalLifecycleOwner.current
     // Shell-backed reads must not run during composition. Refresh when Home resumes
     // and when the shared module list changes after an install/remove operation.
-    val count by produceState(initialValue = 0, key1 = modules, key2 = lifecycleOwner) {
+    val count by produceState(initialValue = 0, key1 = modules, key2 = lifecycleOwner, key3 = refreshToken) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            value = withContext(Dispatchers.IO) { getModuleCount() }
+            value = readHomeData(value) { getModuleCount() }
         }
     }
 
-    val moduleUpdateCount by produceState(initialValue = 0, key1 = modules) {
-        value = withContext(Dispatchers.IO) {
+    val moduleUpdateCount by produceState(initialValue = 0, key1 = modules, key2 = refreshToken) {
+        value = readHomeData(value) {
             modules.count { module ->
                 currentCoroutineContext().ensureActive()
                 module.enabled && moduleViewModel.checkUpdate(module).first.isNotEmpty()
@@ -507,15 +539,25 @@ private fun ModuleCard(onClick: (() -> Unit)? = null) {
     }
 }
 
+/** Failed background reads retain displayed data; leaving Home still cancels the work. */
+private suspend fun <T> readHomeData(previous: T, read: suspend () -> T): T = try {
+    withContext(Dispatchers.IO) { read() }
+} catch (cancelled: CancellationException) {
+    throw cancelled
+} catch (error: Exception) {
+    android.util.Log.w("Home", "Unable to reload Home card", error)
+    previous
+}
+
 @Composable
-fun UpdateCard() {
+fun UpdateCard(refreshToken: Int = 0) {
     val context = LocalContext.current
     val latestVersionInfo = LatestVersionInfo()
     
     var preferSpoofed by remember { mutableStateOf(false) }
     
-    val newVersion by produceState(initialValue = latestVersionInfo, key1 = preferSpoofed) {
-        value = withContext(Dispatchers.IO) {
+    val newVersion by produceState(initialValue = latestVersionInfo, key1 = preferSpoofed, key2 = refreshToken) {
+        value = readHomeData(value) {
             checkNewVersion(preferSpoofed)
         }
     }
@@ -917,12 +959,12 @@ private fun buildHomeInfoSnapshot(
 }
 
 @Composable
-private fun InfoCard(autoExpand: Boolean = false) {
+private fun InfoCard(autoExpand: Boolean = false, refreshToken: Int = 0) {
     val context = LocalContext.current
     val prefs = remember(context) { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
 
-    val isManager = remember { Natives.isManager }
-    val ksuVersion = remember(isManager) { if (isManager) Natives.version else null }
+    val isManager = remember(refreshToken) { Natives.isManager }
+    val ksuVersion = remember(isManager, refreshToken) { if (isManager) Natives.version else null }
 
     var expanded by rememberSaveable { mutableStateOf(false) }
     val developerOptionsEnabled = remember(prefs) { prefs.getBoolean("enable_developer_options", false) }
@@ -936,8 +978,8 @@ private fun InfoCard(autoExpand: Boolean = false) {
     val moduleViewModel: ModuleViewModel = viewModel()
     var homeInfo by remember { mutableStateOf(HomeInfoSnapshot()) }
 
-    LaunchedEffect(ksuVersion, moduleViewModel.moduleList) {
-        homeInfo = withContext(Dispatchers.IO) {
+    LaunchedEffect(ksuVersion, moduleViewModel.moduleList, refreshToken) {
+        homeInfo = readHomeData(homeInfo) {
             buildHomeInfoSnapshot(context, ksuVersion, moduleViewModel.moduleList)
         }
     }

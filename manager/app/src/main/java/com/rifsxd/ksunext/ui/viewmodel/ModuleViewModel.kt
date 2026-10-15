@@ -113,9 +113,7 @@ class ModuleViewModel : ViewModel() {
         zipUris = emptyList()
     }
 
-    fun fetchModuleList() {
-        
-        viewModelScope.launch {
+    fun fetchModuleList() = viewModelScope.launch {
 
             isRefreshing = true
 
@@ -180,7 +178,6 @@ class ModuleViewModel : ViewModel() {
 
                 Log.i(TAG, "load cost: ${SystemClock.elapsedRealtime() - start}, modules: $modules")
             }
-        }
     }
 
     private fun sanitizeVersionString(version: String): String {
