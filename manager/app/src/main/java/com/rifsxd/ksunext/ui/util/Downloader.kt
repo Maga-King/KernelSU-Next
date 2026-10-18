@@ -91,7 +91,8 @@ fun checkNewVersion(preferSpoofed: Boolean? = null): LatestVersionInfo {
                     val isApk = name.endsWith(".apk")
                     if (!isApk) continue
 
-                    val regex = Regex("v(.+?)_(\\d+)-")
+                    // Fork CI may use a commit hash when no version tags exist.
+                    val regex = Regex("KernelSU_Next_(.+?)_(\\d+)-")
                     val matchResult = regex.find(name) ?: continue
                     val versionName = matchResult.groupValues[1]
                     val versionCode = matchResult.groupValues[2]
