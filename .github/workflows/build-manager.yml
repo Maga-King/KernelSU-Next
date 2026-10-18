@@ -1,12 +1,58 @@
 name: Build Manager
+run-name: Manager · ${{ inputs.static_selinux_reference && inputs.selinux_reference_source || 'Dynamic' }} · ${{ inputs.manager_variant || 'both' }}
 
 on:
   workflow_call:
+    inputs:
+      static_selinux_reference:
+        type: boolean
+        required: false
+        default: false
+      selinux_reference_source:
+        type: string
+        required: false
+        default: OriginOS
+      manager_variant:
+        type: string
+        required: false
+        default: both
+      build_extra_ksud:
+        type: boolean
+        required: false
+        default: true
   workflow_dispatch:
+    inputs:
+      static_selinux_reference:
+        description: '启用静态 SELinux 参考策略'
+        type: boolean
+        default: false
+      selinux_reference_source:
+        description: '开启后使用哪一套参考策略'
+        type: choice
+        default: OriginOS
+        options:
+          - OriginOS
+          - ColorOS17
+          - HyperOS
+      manager_variant:
+        description: '管理器：normal 普通版 / spoofed 伪装版 / both 两种'
+        type: choice
+        default: both
+        options:
+          - both
+          - normal
+          - spoofed
+      build_extra_ksud:
+        description: '额外编译桌面平台 ksud（只要 APK 可不勾选）'
+        type: boolean
+        default: false
 
 jobs:
   build-lkm:
     uses: ./.github/workflows/build-lkm.yml
+    with:
+      static_selinux_reference: ${{ inputs.static_selinux_reference || false }}
+      selinux_reference_source: ${{ inputs.selinux_reference_source || 'OriginOS' }}
     secrets: inherit
 
   build-ksuinit:
@@ -29,6 +75,7 @@ jobs:
       os: ${{ matrix.os }}
 
   build-ksud-extra:
+    if: ${{ inputs.build_extra_ksud }}
     needs: [build-lkm, build-ksuinit]
     strategy:
       matrix:
@@ -53,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        spoofed: [ false, true ]
+        spoofed: ${{ fromJSON(inputs.manager_variant == 'spoofed' && '[true]' || inputs.manager_variant == 'normal' && '[false]' || '[false,true]') }}
 
     defaults:
       run:
@@ -125,6 +172,14 @@ jobs:
           cp -f ../x86_64-linux-android/release/ksud ../manager/app/src/main/jniLibs/x86_64/libksud.so
           cp -f ../riscv64-linux-android/release/ksud ../manager/app/src/main/jniLibs/riscv64/libksud.so
 
+      - name: Record bundled SELinux reference
+        env:
+          REFERENCE_ENABLED: ${{ inputs.static_selinux_reference || false }}
+          REFERENCE_SOURCE: ${{ inputs.selinux_reference_source || 'OriginOS' }}
+        run: |
+          mkdir -p app/src/main/assets
+          python3 ../scripts/select_static_reference.py --enabled "$REFERENCE_ENABLED" --source "$REFERENCE_SOURCE" --report app/src/main/assets/selinux-reference.json
+
       - name: Build with Gradle
         run: ./gradlew clean assembleRelease
 
@@ -136,7 +191,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.spoofed && 'manager-spoofed' || 'manager' }}
-          path: manager/app/build/outputs/apk/release/*.apk
+          path: |
+            manager/app/build/outputs/apk/release/*.apk
 
       - name: Upload mappings
         uses: actions/upload-artifact@v7
