@@ -45,6 +45,7 @@
  * says so in the log instead of failing silently.
  */
 #include <linux/kernel.h>
+#include <linux/version.h>	/* LINUX_VERSION_CODE: fsnotify_open() moved into the open path at 6.6 */
 #include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/file.h>
@@ -79,6 +80,14 @@ struct susfs_open_how {
 	 O_APPEND | O_NONBLOCK | O_NDELAY | __O_SYNC | O_DSYNC | FASYNC |	\
 	 O_DIRECT | O_LARGEFILE | O_DIRECTORY | O_NOFOLLOW | O_NOATIME |		\
 	 O_CLOEXEC | O_PATH | __O_TMPFILE)
+
+/* fs/open.c's own O_PATH_FLAGS, and what build_open_how() narrows the flags to whenever O_PATH is
+ * present ("O_PATH beats everything else.").  Only these four bits survive that narrowing, so
+ * everything a caller sends alongside O_PATH - O_CREAT, O_EXCL, O_TRUNC - is gone before the kernel
+ * works out the lookup flags of the call.  It lives as a #define inside fs/open.c rather than in a
+ * header, hence spelled out here; O_CLOEXEC being in the set is also why a descriptor's own flag
+ * survives the narrowing. */
+#define SUSFS_OR_PATH_FLAGS	(O_DIRECTORY | O_NOFOLLOW | O_PATH | O_CLOEXEC)
 
 /* openat2's resolve bits (uapi/linux/openat2.h) and the lookup flags the kernel turns them into. */
 #define SUSFS_RESOLVE_NO_XDEV		0x01
@@ -184,6 +193,11 @@ static __nocfi noinline long or_entry_redirect(const struct pt_regs *regs, int k
 {
 	const char __user *uname = NULL;
 	unsigned long flags = 0, mode = 0, resolve = 0, usize = 0, o2flags = 0;
+	/* The descriptor's own flag, kept out of the narrowing the file flags go through: the kernel
+	 * takes it from the UNSTRIPPED flags when it allocates a descriptor (do_sys_openat2():
+	 * get_unused_fd_flags(how->flags), where alloc_fd() reads O_CLOEXEC), and losing it hands back a fd that survives
+	 * execve - a difference one fcntl(F_GETFD) reads. */
+	unsigned int fd_cloexec = 0;
 	struct susfs_open_how how;
 	struct filename *name;
 	struct path path;
@@ -252,6 +266,14 @@ static __nocfi noinline long or_entry_redirect(const struct pt_regs *regs, int k
 		 * kernel does: FMODE_NONOTIFY is not one of O_PATH_FLAGS, so judging the raw flags would
 		 * turn a legal `O_PATH|FMODE_NONOTIFY` open into "a flag the kernel would refuse" and hand
 		 * the call back to a kernel that opens the real file. */
+		/* O_CLOEXEC is stripped from the copy everything below judges, because it is not a
+		 * property of the file - but it belongs to the DESCRIPTOR, and the kernel keeps it for
+		 * exactly the moment it allocates one: do_sys_openat2() calls
+		 * get_unused_fd_flags(how->flags), where alloc_fd() reads O_CLOEXEC.  Dropping it here
+		 * (this branch assigns flags = o2flags a few lines down, and that copy is what the
+		 * descriptor was allocated from) gave every redirected openat2(..., O_CLOEXEC) a fd
+		 * without FD_CLOEXEC: it survives execve, and fcntl(F_GETFD) says so in one call. */
+		fd_cloexec = (unsigned int)(how.flags & O_CLOEXEC);
 		o2flags = how.flags & ~(unsigned long)(FMODE_NONOTIFY | O_CLOEXEC);
 		/* A resolve bit the kernel does not know is EINVAL, and EINVAL is an answer we cannot
 		 * give: it comes from the kernel.  A bit it does know is mapped onto the same LOOKUP_*
@@ -297,10 +319,7 @@ static __nocfi noinline long or_entry_redirect(const struct pt_regs *regs, int k
 		return SUSFS_OR_ENTRY_PASS;
 	}
 
-	/* O_TMPFILE is not a path open in the sense filp_open() models (it needs the O_DIRECTORY
-	 * part handled by the caller's dirfd), so those are left to the kernel untouched.
-	 *
-	 * The rest of the flags are handled the way the kernel handles them per entry, because that
+	/* The flags are handled the way the kernel handles them per entry, because that
 	 * differs: openat2 validates every field and answers EINVAL for a flag it does not know
 	 * (fs/open.c: build_open_flags() tests the raw how.flags), while open/openat/compat clean the
 	 * invalid bits away first (build_open_how(): `flags & VALID_OPEN_FLAGS`) and then open the file
@@ -308,9 +327,6 @@ static __nocfi noinline long or_entry_redirect(const struct pt_regs *regs, int k
 	 * the older entries would hand the call back to a kernel that happily opens the real file - a
 	 * one-bit bypass of the redirect, and a cheaper one than any of the above.  So the older entries
 	 * get the same mask the kernel applies, and only openat2 can be declined over a flag. */
-	if (flags & __O_TMPFILE)
-		return SUSFS_OR_ENTRY_PASS;
-
 	if (kind == SUSFS_OR_ENTRY_OPENAT2 || kind == SUSFS_OR_ENTRY_COMPAT_OPENAT2) {
 		/* Those two bits were already removed in the branch above, before its first check - the
 		 * kernel removes them before any of its own.  What is left is the gate the kernel applies
@@ -319,7 +335,40 @@ static __nocfi noinline long or_entry_redirect(const struct pt_regs *regs, int k
 			return SUSFS_OR_ENTRY_PASS;
 	} else {
 		flags &= SUSFS_OR_KNOWN_FLAGS;
+		/* The kernel narrows O_PATH before anything else looks at the flags - "O_PATH beats
+		 * everything else." in build_open_how() - so by the time build_open_flags() works out
+		 * whether the last component is followed, an O_CREAT/O_EXCL that arrived alongside
+		 * O_PATH is already gone.  Judging the flags as they arrived made this layer resolve a
+		 * DIFFERENT name than the kernel resolves: it saw O_CREAT|O_EXCL, withheld
+		 * LOOKUP_FOLLOW, and matched the rule table against the symlink itself, while the
+		 * kernel followed that symlink and opened its target.  So a caller who writes
+		 * `ln -s <rule target> <a path of his own>` and then asks for O_PATH|O_CREAT|O_EXCL
+		 * was handed the un-redirected file - the redirect stepped around without ever touching
+		 * the rule table.  Narrowed here, both layers walk the same name.
+		 *
+		 * (openat2 does not narrow: it never calls build_open_how(), and build_open_flags()
+		 * answers that same combination with EINVAL - which is why the branch above is left
+		 * alone.) */
+		if (flags & O_PATH)
+			flags &= SUSFS_OR_PATH_FLAGS;
+		/* From the same function: a call that cannot create carries no mode, and an O_PATH
+		 * open never can. */
+		if (flags & O_PATH)
+			mode = 0;
+		/* O_CLOEXEC survives the narrowing above (it is one of O_PATH_FLAGS), so the
+		 * descriptor's flag is read from the flags the kernel would allocate it from. */
+		fd_cloexec = (unsigned int)(flags & O_CLOEXEC);
 	}
+
+	/* O_TMPFILE is not a path open in the sense filp_open() models (it needs the O_DIRECTORY part
+	 * handled by the caller's dirfd), so those are left to the kernel untouched.  This check sits
+	 * AFTER the narrowing above on purpose: build_open_how() discards __O_TMPFILE whenever O_PATH is
+	 * present, so `openat(p, O_PATH|__O_TMPFILE)` is a plain O_PATH open to the kernel - handing
+	 * that combination back here would leave one more open the kernel resolves while this layer
+	 * never looked at it.  (openat2 answers the same combination with EINVAL instead, and the
+	 * branch above already passes such a call through.) */
+	if (flags & __O_TMPFILE)
+		return SUSFS_OR_ENTRY_PASS;
 
 	/* Which inode is the caller opening?  The lookup flags are the kernel's own translation of the
 	 * caller's flags and of openat2's resolve bits (fs/open.c, right before do_filp_open): with
@@ -366,7 +415,7 @@ static __nocfi noinline long or_entry_redirect(const struct pt_regs *regs, int k
 	/* The descriptor is taken BEFORE the file is opened, which is the order do_sys_openat2() uses:
 	 * an EMFILE/ENFILE open then touches nothing at all, where opening first would have created or
 	 * truncated the rule's target and then failed anyway. */
-	fd = or_get_unused_fd_flags_fn((unsigned)(flags & O_CLOEXEC));
+	fd = or_get_unused_fd_flags_fn(fd_cloexec);
 	if (fd < 0)
 		return fd;
 
@@ -376,10 +425,18 @@ static __nocfi noinline long or_entry_redirect(const struct pt_regs *regs, int k
 		return PTR_ERR(f);
 	}
 
-	/* Same order as do_sys_openat2(): the notification goes out before the fd is visible.  Without
-	 * this the redirected open is the only open in the system that produces no IN_OPEN, which both
-	 * breaks inotify users and makes the redirect visible to anyone watching. */
+	/* Same order as do_sys_openat2(): the notification goes out before the fd is visible.
+	 *
+	 * Only where the kernel does not send it itself.  On 5.10..6.1 the one fsnotify_open() call
+	 * sits in do_sys_openat2(), which a filp_open() never reaches - without this line the
+	 * redirected open would be the only open on the system with no IN_OPEN, which breaks inotify
+	 * users and makes the redirect stand out.  6.6 moved that call into do_dentry_open()
+	 * (fs/open.c:985 there) and 6.12 split it out again into vfs_open() (:1095); filp_open() goes
+	 * through both, so on 6.6 and later the kernel has already reported this open and a second
+	 * call here produced two IN_OPEN events for one open. */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0)
 	or_fsnotify_open(f);
+#endif
 	or_fd_install_fn((unsigned)fd, f);
 
 	atomic_inc(&or_entry_hits);

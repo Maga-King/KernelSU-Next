@@ -743,7 +743,7 @@ private fun SecurityCard(
                 onClick = { navigator.navigate(DeveloperScreenDestination) },
             )
 
-            if (Natives.isLkmMode) {
+            if (Natives.isLkmMode && !Natives.isLateLoadMode) {
                 UninstallItem(
                     navigator = navigator,
                     withLoading = { loadingDialog.withLoading(it) },

@@ -67,6 +67,10 @@
   <string name="module_version_code">模組版本</string>
   <string name="module_update_json">更新配置</string>
   <string name="module_update_json_empty">無更新配置</string>
+  <string name="module_preinit_no_space">preinit 未生效：/metadata 空間不足</string>
+  <string name="module_preinit_error">preinit 未生效：preinit 目錄無效</string>
+  <string name="module_preinit_bootloop">多次啟動失敗，preinit 已停用</string>
+  <string name="module_preinit_unsupported">preinit 未生效：目前核心不支援</string>
   <string name="enable_developer_options">啟用開發人員選項</string>
   <string name="enable_developer_options_summary">顯示僅適合開發人員的隱藏設置和調試訊息。</string>
   <string name="refresh">重新整理</string>
@@ -154,6 +158,8 @@
   <string name="open">開啟</string>
   <string name="enable_web_debugging">啟用 WebView 偵錯</string>
   <string name="enable_web_debugging_summary">可用於偵錯 WebUI，僅在需要時啟用。</string>
+  <string name="soft_reboot_after_module_flash">刷入模組後軟重新啟動</string>
+  <string name="soft_reboot_after_module_flash_summary">刷入模組後使用模擬軟重新啟動，取代完整重新啟動裝置。</string>
   <string name="direct_install">直接安裝（推薦）</string>
   <string name="select_file">選取檔案</string>
   <string name="flash_module">刷入模組</string>

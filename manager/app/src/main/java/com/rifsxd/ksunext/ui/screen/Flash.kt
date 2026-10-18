@@ -35,6 +35,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
+import com.rifsxd.ksunext.Natives
 import com.rifsxd.ksunext.R
 import com.rifsxd.ksunext.ui.component.ConfirmResult
 import com.rifsxd.ksunext.ui.component.KeyEventBlocker
@@ -113,6 +114,7 @@ fun FlashScreen(
 
     val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     val developerOptionsEnabled = prefs.getBoolean("enable_developer_options", false)
+    val softRebootAfterModuleFlash = prefs.getBoolean("soft_reboot_after_module_flash", false)
 
     val activity = context.findActivity()
 
@@ -249,7 +251,7 @@ fun FlashScreen(
                     onClick = {
                         scope.launch {
                             withContext(Dispatchers.IO) {
-                                reboot()
+                                reboot(if (softRebootAfterModuleFlash) "soft-reboot" else "")
                             }
                         }
                     },
@@ -467,6 +469,16 @@ fun flashIt(
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit
 ): FlashResult {
+    if (Natives.isLateLoadMode && (
+            flashIt is FlashIt.FlashAnyKernel ||
+                flashIt is FlashIt.FlashUninstall ||
+                flashIt is FlashIt.FlashRestore ||
+                flashIt is FlashIt.FlashBoot && (flashIt.boot == null || flashIt.ota)
+            )
+    ) {
+        return FlashResult(1, "", false)
+    }
+
     return when (flashIt) {
         is FlashIt.FlashBoot -> installBoot(
             flashIt.boot,
