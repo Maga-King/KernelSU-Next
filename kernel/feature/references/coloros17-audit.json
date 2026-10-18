@@ -1,0 +1,82 @@
+{
+  "id": "coloros17",
+  "sha256": "fa7ea4cefdba2502fbd180b6fde1ffa38600ea9a8f92e3c89057537d24be0a9c",
+  "bytes": 2260866,
+  "policy_version": 30,
+  "vendor_mapping_version": "202404",
+  "stock_permissions_preserved": true,
+  "runtime_compile_disable_neverallow": true,
+  "permissive_domains": [],
+  "root_injected_types": [],
+  "readback": true,
+  "roundtrip": true,
+  "precompiled_mismatched_partitions": [],
+  "precompiled_sha256": "707a755fbd8ad3520b7a35d81ce49351b3568a8cca6b204d63bd13e1b15e35a2",
+  "matches_stock_precompiled_bytes": false,
+  "inputs": [
+    {
+      "path": "system/plat_sepolicy.cil",
+      "sha256": "eb483c77e1db80a3b9f3437f7fa7f7c893daf47c348cb59631a949b9fa3c57d8"
+    },
+    {
+      "path": "system/mapping/202404.cil",
+      "sha256": "a5f6b060114f66b0190b05815c42d993f4c8a98a843ed9205fdaf0d7a5ca5974"
+    },
+    {
+      "path": "system/mapping/202404.compat.cil",
+      "sha256": "801ad38741a5a078e4795feef41dfc6f44fef23d083ee08e4d5095f074b8f344"
+    },
+    {
+      "path": "system_ext/system_ext_sepolicy.cil",
+      "sha256": "5a5340dfe896237690f3a82f332abfc0d2ffe63e41266171e279e4535aff188a"
+    },
+    {
+      "path": "system_ext/mapping/202404.cil",
+      "sha256": "034cc31640f5a43e59502365a14d7b63e704cb1b64579168fcb17dff216df2e4"
+    },
+    {
+      "path": "system_ext/mapping/202404.compat.cil",
+      "sha256": "2b11aa5becb9ccafabca97acdc30af945669b97d5606def5075101a57cb43cc1"
+    },
+    {
+      "path": "product/product_sepolicy.cil",
+      "sha256": "e1f4c32e1809a60e6a2bf2eb9c1af2c83efd3be45fda87e740f46df817e9d916"
+    },
+    {
+      "path": "product/mapping/202404.cil",
+      "sha256": "9eafa4355e2474c062fad49e81df66ffd67e01ef8904b23bffb2eded9b585838"
+    },
+    {
+      "path": "vendor/plat_pub_versioned.cil",
+      "sha256": "b885cdba6609be2da01ac6600f95df65e4e3ed9157c99c5faa3716aba836993e"
+    },
+    {
+      "path": "vendor/vendor_sepolicy.cil",
+      "sha256": "fba9fab267d6b1b184883603ac52ff21f5d41aa3777a48764246a889f4d7e3ca"
+    }
+  ],
+  "compile_command": [
+    "/mnt/d/selinux-detector-research/20261015/policy/secilc-host",
+    "-m",
+    "-M",
+    "true",
+    "-G",
+    "-N",
+    "-c",
+    "30",
+    "-o",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/prepared/coloros17/reference.policy",
+    "-f",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/prepared/coloros17/file_contexts",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/capture/system/plat_sepolicy.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/capture/system/mapping/202404.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/capture/system/mapping/202404.compat.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/capture/system_ext/system_ext_sepolicy.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/capture/system_ext/mapping/202404.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/capture/system_ext/mapping/202404.compat.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/capture/product/product_sepolicy.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/capture/product/mapping/202404.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/capture/vendor/plat_pub_versioned.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/capture/vendor/vendor_sepolicy.cil"
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "id": "hyperos",
+  "sha256": "f01b6c9834ff56b5754a20bafb1247708e334d5a36eaf95c6b435c46b506b1db",
+  "bytes": 1981126,
+  "policy_version": 30,
+  "vendor_mapping_version": "202504",
+  "stock_permissions_preserved": true,
+  "runtime_compile_disable_neverallow": true,
+  "permissive_domains": [],
+  "root_injected_types": [],
+  "readback": true,
+  "roundtrip": true,
+  "precompiled_mismatched_partitions": [
+    "plat",
+    "system_ext",
+    "product"
+  ],
+  "precompiled_sha256": "3a9f05c9edf886cb63b6e8118e984ebc2e5f277566998ba00fdd80e86d24433e",
+  "matches_stock_precompiled_bytes": false,
+  "inputs": [
+    {
+      "path": "system/plat_sepolicy.cil",
+      "sha256": "8be91bf28cbefad3fc4bf556f5baa6de3d027a8cd86247b9317411b056b1e6df"
+    },
+    {
+      "path": "system/mapping/202504.cil",
+      "sha256": "0bcf5ba18f684e8bb57ca4998e9f3576ef04d4b1ee8c6ca8302878725a6250d2"
+    },
+    {
+      "path": "system/mapping/202504.compat.cil",
+      "sha256": "0d64f42958274091ff8f88791a5db634fe5a5549d19614a940e29f32211f6a89"
+    },
+    {
+      "path": "system_ext/system_ext_sepolicy.cil",
+      "sha256": "63491bd82a2c64e006f169d923e56b9511a99b04fc80b113830a3ff604bbeb51"
+    },
+    {
+      "path": "system_ext/mapping/202504.cil",
+      "sha256": "2ca6bfab287c0c7d2af9b7cd39b69ea3ccd15994c1403964edaddcfddff130c0"
+    },
+    {
+      "path": "system_ext/mapping/202504.compat.cil",
+      "sha256": "b4d844057f2c4d585981e10d6ed092857419bb0c87e6ec524d2a613a6b725428"
+    },
+    {
+      "path": "product/product_sepolicy.cil",
+      "sha256": "022c8ee986544c73abe29a4bbc2cc2ccc8bf3dfa53b862a272c0b0865de0cb02"
+    },
+    {
+      "path": "product/mapping/202504.cil",
+      "sha256": "934bb77bba43f8dfe26c7eabb1498adb5a5656992d1c35fba815b62128a0b263"
+    },
+    {
+      "path": "vendor/plat_pub_versioned.cil",
+      "sha256": "d30f8c7c99c6f9b73783dc92f225a900c4da002aa87327b13969033b0cfc0437"
+    },
+    {
+      "path": "vendor/vendor_sepolicy.cil",
+      "sha256": "7fbcf15bc0dba5ee30f533562c2d121c6f7c239edf815b0f8bb807d9fbaec60f"
+    },
+    {
+      "path": "odm/odm_sepolicy.cil",
+      "sha256": "65687a04e0f3756e6517b823dd784cf8e24e0f7b6b330e97047c40729749f106"
+    },
+    {
+      "path": "system/plat_sepolicy_genfs_202504.cil",
+      "sha256": "480d503e7730236b659230d16b3946b628394d529dabfef67c679281fd98357b"
+    }
+  ],
+  "compile_command": [
+    "/mnt/d/selinux-detector-research/20261015/policy/secilc-host",
+    "-m",
+    "-M",
+    "true",
+    "-G",
+    "-N",
+    "-c",
+    "30",
+    "-o",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/prepared/hyperos/reference.policy",
+    "-f",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/prepared/hyperos/file_contexts",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/hyperos/system/plat_sepolicy.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/hyperos/system/mapping/202504.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/hyperos/system/mapping/202504.compat.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/hyperos/system_ext/system_ext_sepolicy.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/hyperos/system_ext/mapping/202504.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/hyperos/system_ext/mapping/202504.compat.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/hyperos/product/product_sepolicy.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/hyperos/product/mapping/202504.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/hyperos/vendor/plat_pub_versioned.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/hyperos/vendor/vendor_sepolicy.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/hyperos/odm/odm_sepolicy.cil",
+    "/mnt/f/SEPOLICY/_work/KSUN-LKM-PolicyChoices-20261018/hyperos/system/plat_sepolicy_genfs_202504.cil"
+  ]
+}

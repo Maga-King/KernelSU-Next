@@ -17,7 +17,32 @@ on:
         required: false
         default: ''
         type: string
+      static_selinux_reference:
+        description: '启用静态 SELinux 参考策略'
+        required: false
+        default: false
+        type: boolean
+      selinux_reference_source:
+        description: '参考策略：OriginOS / ColorOS17 / HyperOS'
+        required: false
+        default: OriginOS
+        type: string
   workflow_dispatch:
+    inputs:
+      static_selinux_reference:
+        description: '启用静态 SELinux 参考策略'
+        required: false
+        default: false
+        type: boolean
+      selinux_reference_source:
+        description: '开启后使用哪一套参考策略（三选一）'
+        required: true
+        default: OriginOS
+        type: choice
+        options:
+          - OriginOS
+          - ColorOS17
+          - HyperOS
 jobs:
   build-lkm-ksu:
     strategy:
@@ -37,6 +62,8 @@ jobs:
       manager_package: ${{ inputs.manager_package || '' }}
       expected_manager_size: ${{ inputs.expected_manager_size || '' }}
       expected_manager_hash: ${{ inputs.expected_manager_hash || '' }}
+      static_selinux_reference: ${{ inputs.static_selinux_reference || false }}
+      selinux_reference_source: ${{ inputs.selinux_reference_source || 'OriginOS' }}
   
   build-lkm-susfs:
     strategy:

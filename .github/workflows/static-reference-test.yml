@@ -7,7 +7,9 @@ on:
     paths:
       - 'kernel/**'
       - 'scripts/embed_static_reference.py'
+      - 'scripts/select_static_reference.py'
       - 'scripts/tests/test_static_reference.py'
+      - 'scripts/tests/test_reference_selection.py'
       - 'scripts/tests/test_manager_signing.py'
       - 'scripts/prepare_manager_signing.py'
       - 'scripts/verify_manager_apk.py'
@@ -24,7 +26,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        reference: ['n', 'y']
+        include:
+          - reference: 'n'
+            source: OriginOS
+          - reference: 'y'
+            source: OriginOS
+          - reference: 'y'
+            source: ColorOS17
+          - reference: 'y'
+            source: HyperOS
     container:
       image: ghcr.io/ylarod/ddk-min:android15-6.6-20260828
       options: --privileged
@@ -32,6 +42,11 @@ jobs:
       - uses: actions/checkout@v7
       - name: Reference generator tests
         run: python3 -m unittest discover -s scripts/tests -v
+      - name: Select reference
+        env:
+          REFERENCE_ENABLED: ${{ matrix.reference }}
+          REFERENCE_SOURCE: ${{ matrix.source }}
+        run: python3 scripts/select_static_reference.py --enabled "$REFERENCE_ENABLED" --source "$REFERENCE_SOURCE" --report selinux-reference.json
       - name: Compile experimental feature and upstream fallback
         env:
           REFERENCE_ENABLED: ${{ matrix.reference }}
@@ -40,16 +55,24 @@ jobs:
           set -euo pipefail
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           cd kernel
-          CONFIG_KSU=m CONFIG_KSU_STATIC_SELINUX_REFERENCE="$REFERENCE_ENABLED" CC=clang make 2>&1 | tee "$GITHUB_WORKSPACE/compile.log"
+          CONFIG_KSU=m CC=clang make CONFIG_KSU_STATIC_SELINUX_REFERENCE="$CONFIG_KSU_STATIC_SELINUX_REFERENCE" KSU_REFERENCE_POLICY="$KSU_REFERENCE_POLICY" 2>&1 | tee "$GITHUB_WORKSPACE/compile.log"
           mkdir -p "$GITHUB_WORKSPACE/test-artifact"
-          cp kernelsu.ko "$GITHUB_WORKSPACE/test-artifact/compile-test-only-android15-6.6-ref-$REFERENCE_ENABLED.ko"
-          cp feature/reference.policy "$GITHUB_WORKSPACE/test-artifact/QUERY-ONLY-NOT-FOR-FLASHING.policy"
-          sha256sum feature/reference.policy > "$GITHUB_WORKSPACE/test-artifact/reference.sha256"
+          cp kernelsu.ko "$GITHUB_WORKSPACE/test-artifact/compile-test-only-android15-6.6-ref-${{ matrix.source }}-$REFERENCE_ENABLED.ko"
+          cp "$GITHUB_WORKSPACE/selinux-reference.json" "$GITHUB_WORKSPACE/test-artifact/"
+          if [ "$REFERENCE_ENABLED" = y ]; then
+            cp "$KSU_REFERENCE_POLICY" "$GITHUB_WORKSPACE/test-artifact/QUERY-ONLY-NOT-FOR-FLASHING.policy"
+            sha256sum "$KSU_REFERENCE_POLICY" > "$GITHUB_WORKSPACE/test-artifact/reference.sha256"
+            expected=$(sha256sum "$KSU_REFERENCE_POLICY" | cut -d ' ' -f 1)
+            llvm-strings kernelsu.ko > "$GITHUB_WORKSPACE/module-strings.txt"
+            grep -Fx "$expected" "$GITHUB_WORKSPACE/module-strings.txt"
+          else
+            test ! -f feature/static_reference.o
+          fi
       - name: Upload compile result
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: compile-test-only-6.6-static-reference-${{ matrix.reference }}
+          name: compile-test-only-6.6-static-reference-${{ matrix.source }}-${{ matrix.reference }}
           path: |
             compile.log
             test-artifact/

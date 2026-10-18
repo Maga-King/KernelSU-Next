@@ -1,5 +1,10 @@
 这是固定查询参考策略的实验分支，不是修改手机实际执行策略的工具。
 
+2026-10-18：LKM workflow 新增开关及 OriginOS / ColorOS17 / HyperOS 三选一。
+使用方法、当前文件摘要与来源以 references/README.md、references/manifest.json 为准。
+reference.policy 仍保留为原来的 OriginOS 默认参考，没有移动或被其他系统覆盖。
+以下是初始基线的制作记录；OriginOS 二进制后来经过 2026-10-15 审阅更新，旧摘要不是当前文件摘要。
+
 reference.policy 是 2026-10-04 运行中的 OriginOS DSU 分区 CIL 重编译结果。
 策略格式 30，大小 2278330 字节，SHA256 如下：
 954080162a620cb6273a5f583d36db9bb3ada65a3ea0abfd2eba5bc8d5dc5849

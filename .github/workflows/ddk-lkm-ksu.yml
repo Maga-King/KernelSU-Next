@@ -27,6 +27,16 @@ on:
         required: false
         default: ''
         type: string
+      static_selinux_reference:
+        description: 'Enable the fixed SELinux query reference'
+        required: false
+        default: false
+        type: boolean
+      selinux_reference_source:
+        description: 'OriginOS / ColorOS17 / HyperOS'
+        required: false
+        default: OriginOS
+        type: string
 
 jobs:
   build-kernelsu-ko:
@@ -39,6 +49,12 @@ jobs:
     steps:
     - name: Checkout source code
       uses: actions/checkout@v7
+
+    - name: 选择 SELinux 参考策略
+      env:
+        REFERENCE_ENABLED: ${{ inputs.static_selinux_reference }}
+        REFERENCE_SOURCE: ${{ inputs.selinux_reference_source }}
+      run: python3 scripts/select_static_reference.py --enabled "$REFERENCE_ENABLED" --source "$REFERENCE_SOURCE" --report selinux-reference.json
 
     - name: Build kernelsu.ko
       env:
@@ -63,7 +79,7 @@ jobs:
           EXTRA_ARGS="$EXTRA_ARGS KSU_NEXT_MANAGER_HASH=$EXPECTED_MANAGER_HASH"
         fi
 
-        CONFIG_KSU=m CC=clang make $EXTRA_ARGS
+        CONFIG_KSU=m CC=clang make CONFIG_KSU_STATIC_SELINUX_REFERENCE="$CONFIG_KSU_STATIC_SELINUX_REFERENCE" KSU_REFERENCE_POLICY="$KSU_REFERENCE_POLICY" $EXTRA_ARGS
         
         echo "=== Build completed ==="
 
@@ -74,6 +90,7 @@ jobs:
         # Copy with KMI-specific naming
         OUTPUT_NAME="${{ inputs.kmi }}_kernelsu.ko"
         cp kernelsu.ko "$OUT_DIR/$OUTPUT_NAME"
+        cp "$GITHUB_WORKSPACE/selinux-reference.json" "$OUT_DIR/selinux-reference.json"
         
         echo "Copied to: $OUT_DIR/$OUTPUT_NAME"
         ls -la "$OUT_DIR/$OUTPUT_NAME"
@@ -85,7 +102,9 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: aarch64-${{ inputs.kmi }}-ksu-lkm
-        path: /github/workspace/out/aarch64/${{ inputs.kmi }}_kernelsu.ko
+        path: |
+          /github/workspace/out/aarch64/${{ inputs.kmi }}_kernelsu.ko
+          /github/workspace/out/aarch64/selinux-reference.json
 
     - name: Build kernelsu.ko for x64
       env:
@@ -141,9 +160,9 @@ jobs:
         MDIR=$(realpath .)
 
         if [ "$kmi" == "android17-6.18" ]; then
-          make -C $KDIR M=$MDIR MO=$MDIR compile_commands.json modules CONFIG_KSU=m CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER=y $EXTRA_ARGS
+          make -C $KDIR M=$MDIR MO=$MDIR compile_commands.json modules CONFIG_KSU=m CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER=y CONFIG_KSU_STATIC_SELINUX_REFERENCE="$CONFIG_KSU_STATIC_SELINUX_REFERENCE" KSU_REFERENCE_POLICY="$KSU_REFERENCE_POLICY" $EXTRA_ARGS
         else
-          make -C $KDIR M=$MDIR src=$MDIR compile_commands.json modules CONFIG_KSU=m CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER=y $EXTRA_ARGS
+          make -C $KDIR M=$MDIR src=$MDIR compile_commands.json modules CONFIG_KSU=m CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER=y CONFIG_KSU_STATIC_SELINUX_REFERENCE="$CONFIG_KSU_STATIC_SELINUX_REFERENCE" KSU_REFERENCE_POLICY="$KSU_REFERENCE_POLICY" $EXTRA_ARGS
         fi
         
         echo "=== Build completed ==="
@@ -155,6 +174,7 @@ jobs:
         # Copy with KMI-specific naming
         OUTPUT_NAME="${{ inputs.kmi }}_kernelsu.ko"
         cp kernelsu.ko "$OUT_DIR/$OUTPUT_NAME"
+        cp "$GITHUB_WORKSPACE/selinux-reference.json" "$OUT_DIR/selinux-reference.json"
         
         echo "Copied to: $OUT_DIR/$OUTPUT_NAME"
         ls -la "$OUT_DIR/$OUTPUT_NAME"
@@ -166,4 +186,6 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: x86_64-${{ inputs.kmi }}-ksu-lkm
-        path: /github/workspace/out/x86_64/${{ inputs.kmi }}_kernelsu.ko
+        path: |
+          /github/workspace/out/x86_64/${{ inputs.kmi }}_kernelsu.ko
+          /github/workspace/out/x86_64/selinux-reference.json

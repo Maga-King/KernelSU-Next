@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "scope": "query references only; never enforcement policies",
+  "policies": {
+    "originos": {
+      "path": "kernel/feature/reference.policy",
+      "sha256": "0fd7b75ce8679062e09881bee649a784a9c73040dd19f3f9f699f87ab714f542",
+      "bytes": 2278330,
+      "policy_version": 30,
+      "description": "Existing OriginOS reference, including the 2026-10-15 review; unchanged"
+    },
+    "coloros17": {
+      "path": "kernel/feature/references/coloros17.policy",
+      "sha256": "fa7ea4cefdba2502fbd180b6fde1ffa38600ea9a8f92e3c89057537d24be0a9c",
+      "bytes": 2260866,
+      "policy_version": 30,
+      "description": "ColorOS 17 PJZ110_17.0.0.103(CN01), compiled from static partition CIL; stock permissions preserved"
+    },
+    "hyperos": {
+      "path": "kernel/feature/references/hyperos.policy",
+      "sha256": "f01b6c9834ff56b5754a20bafb1247708e334d5a36eaf95c6b435c46b506b1db",
+      "bytes": 1981126,
+      "policy_version": 30,
+      "description": "HyperOS 4 Android 17, supplied DNA_HYPER split CIL; stock permissions preserved, stale precompiled policy not used"
+    }
+  }
+}
