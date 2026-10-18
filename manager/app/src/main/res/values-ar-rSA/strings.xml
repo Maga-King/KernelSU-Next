@@ -12,6 +12,7 @@
   <string name="home_not_installed">غير مثبت</string>
   <string name="home_click_to_install">انقر للتثبيت</string>
   <string name="home_working">يعمل</string>
+  <string name="home_activated">مفعّل</string>
   <string name="home_module_update_count">تحديثات: %d</string>
   <string name="home_failure">غير مدعوم | غير مدمج</string>
   <string name="home_failure_tip">نواة غير GKI غير مدعومة. ادمج نواة KernelSU-Next القديمة في النواة الخاصة بك!</string>

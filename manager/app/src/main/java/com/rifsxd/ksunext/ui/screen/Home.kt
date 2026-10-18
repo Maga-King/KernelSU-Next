@@ -226,8 +226,12 @@ fun HomeScreen(navigator: DestinationsNavigator) {
         ),
         installed = installed,
         needsAccess = installed && !hasRoot,
-        firstLabel = "KernelSU",
-        firstValue = if (installed) "${ksuVersionTag ?: ksuVersion}" else stringResource(R.string.home_not_installed),
+        firstLabel = "KSU NEXT",
+        firstValue = stringResource(when {
+            installed && hasRoot -> R.string.home_activated
+            installed -> R.string.grant_root_failed
+            else -> R.string.home_not_installed
+        }),
         secondLabel = stringResource(R.string.aster_scene_mode),
         secondValue = when {
             !installed -> stringResource(R.string.unavailable)

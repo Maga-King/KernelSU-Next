@@ -12,6 +12,7 @@
   <string name="home_not_installed">설치되지 않음</string>
   <string name="home_click_to_install">클릭하여 설치</string>
   <string name="home_working">작동 중</string>
+  <string name="home_activated">활성화됨</string>
   <string name="home_module_update_count">업데이트: %d</string>
   <string name="home_failure">지원되지 않음 | 통합되지 않음</string>
   <string name="home_failure_tip">비 GKI 커널은 지원되지 않습니다. KernelSU-Next 레거시 드라이버를 커널에 통합하세요!</string>

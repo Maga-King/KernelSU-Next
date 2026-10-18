@@ -32,8 +32,12 @@ KernelPatch probes and separate KPM/APM management are not imported. UI labels d
 actual state. Existing warnings and protected installation conditions remain in place.
 
 Both layouts are retained and can be switched in Settings. Home appearance also offers the
-layout choice, wallpaper controls and clock styles. No screenshot wallpaper or third-party font
-is bundled. The preview retains the user's existing selected wallpaper.
+layout choice, wallpaper controls and clock styles. Fresh installations include the repository
+owner's selected wallpaper and crop (exported from the manager on 2026-10-18, with permission),
+with panorama and the expanded scene rail enabled. The original image is bundled, not a screenshot.
+The preset applies only to an empty settings store with no legacy wallpaper; upgrades preserve
+all existing choices, including disabled or removed wallpaper. Removing the preset image does
+not reinstall it on the next launch. No third-party font is bundled.
 
 ## Build
 
@@ -67,6 +71,12 @@ the refresh indicator; card data effects re-run without clearing their previous 
 The manager-only daemon installation order is unchanged. Dark mode bridges Material's content
 foreground into the Miuix shell so legacy cards retain readable text.
 
+The panorama status names the manager `KSU NEXT` and explicitly shows `Activated` when Root
+is available. Module pull-to-refresh publishes a complete fresh snapshot, completes its indicator
+in the refresh task, and rechecks module updates and banners without restarting the Activity.
+Manager update checks use only `Maga-King/KernelSU-Next` Releases, with no upstream fallback.
+Actions artifacts are not releases; a repository without a published release offers no update.
+
 ## Verification
 
 Device verification uses the side-by-side preview on OnePlus PJZ110 (Android 17, 120 Hz).
@@ -88,3 +98,16 @@ mean the samples do not isolate one individual optimization.
 Root, flashing, module mutation and reboot operations were not executed in this UI-only preview.
 The preview signature remains SHA-256
 `47f1bf86449c4d3021dad441982204c0f8531fdc388e1251ecb31fb9d04a3a4c`.
+
+On 2026-10-18 the fixed status and refresh behavior were also checked in the normal package,
+signed with the fork certificate: the active Home displayed `KSU NEXT` / `已激活`, all prior
+preferences and the wallpaper bytes survived the update, and repeated module pulls completed
+fresh six-module reads (62–67 ms). HMA's `Loading` description matched its actual `module.prop`
+and daemon output. A disposable preview verified the fresh-install image/crop, removal through
+the UI surviving a cold launch, and preservation of existing layout, disabled wallpaper and crop.
+The test preview was removed afterwards.
+
+Upstream through `7b5fdb7a` is integrated with the Aster shell. Its preinit module warnings,
+optional module soft reboot and late-load installation guards are retained; the removed splash
+animation and its now-unused preference are not restored. The fork's static SELinux references,
+manager signing and risk-scan defaults remain in place.

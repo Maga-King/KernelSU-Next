@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import coil.Coil
 import coil.ImageLoader
+import com.rifsxd.ksunext.ui.home.HomeUiDefaults
 import com.rifsxd.ksunext.ui.util.LocaleHelper
 import com.rifsxd.ksunext.ui.util.createRootShellBuilder
 import com.rifsxd.ksunext.ui.viewmodel.ModuleViewModel
@@ -33,6 +34,7 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
         super.onCreate()
         LocaleHelper.migrateLegacyLocale(this)
         ksuApp = this
+        HomeUiDefaults.initialize(this)
         Shell.setDefaultBuilder(createRootShellBuilder(true))
         Shell.enableVerboseLogging = BuildConfig.DEBUG
 

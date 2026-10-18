@@ -12,6 +12,7 @@
   <string name="home_not_installed">Не встановлено</string>
   <string name="home_click_to_install">Нажміть, щоб встановити</string>
   <string name="home_working">Працює</string>
+  <string name="home_activated">Активовано</string>
   <string name="home_module_update_count">Оновлень: %d</string>
   <string name="home_failure">Не підтримується | Не інтегрований</string>
   <string name="home_failure_tip">Ядра без підтримки GKI не підтримуються. Інтегруйте legacy драйвер KernelSU-Next у своє ядро!</string>

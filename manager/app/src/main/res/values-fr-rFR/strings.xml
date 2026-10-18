@@ -12,6 +12,7 @@
   <string name="home_not_installed">Non-installé</string>
   <string name="home_click_to_install">Appuyez pour installer</string>
   <string name="home_working">En fonctionnement</string>
+  <string name="home_activated">Activé</string>
   <string name="home_module_update_count">Mises à jour : %d</string>
   <string name="home_failure">Non pris en charge | Non-intégré</string>
   <string name="home_failure_tip">Les noyaux non-GKI ne sont pas pris en charge. Intégrez le pilote KernelSU-Next dans votre noyau !</string>

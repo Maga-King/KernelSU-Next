@@ -17,6 +17,7 @@ internal class HomeWallpaperStore(context: Context) {
     private val wallpaperDirectory = File(appContext.filesDir, DIRECTORY_NAME)
 
     fun load(): HomeWallpaperState {
+        installBundledWallpaper()
         migrateLegacyWallpaper()
         val enabled = preferences.getBoolean(KEY_ENABLED, false)
         return HomeWallpaperState(
@@ -25,6 +26,36 @@ internal class HomeWallpaperStore(context: Context) {
             night = readSlot(HomeWallpaperSlot.NIGHT, enabled),
             nightEnabled = preferences.getBoolean(KEY_NIGHT_ENABLED, false),
         )
+    }
+
+    private fun installBundledWallpaper() {
+        if (!preferences.getBoolean(HomeUiDefaults.PENDING_WALLPAPER, false)) return
+        // A restored or subsequently selected image always takes precedence.
+        if (preferences.contains(LIGHT_KEYS.fileKey)) {
+            check(preferences.edit().remove(HomeUiDefaults.PENDING_WALLPAPER).commit())
+            return
+        }
+        check(wallpaperDirectory.exists() || wallpaperDirectory.mkdirs())
+        val target = File(wallpaperDirectory, LIGHT_KEYS.fileName)
+        val temporary = File(wallpaperDirectory, "default.${System.nanoTime()}.tmp")
+        try {
+            BufferedInputStream(appContext.assets.open(HomeUiDefaults.WALLPAPER_ASSET)).use { input ->
+                FileOutputStream(temporary).use { output ->
+                    copyWithLimit(input, output)
+                    output.fd.sync()
+                }
+            }
+            check(readImageInfo(temporary) != null)
+            Os.rename(temporary.absolutePath, target.absolutePath)
+            check(preferences.edit()
+                .putString(LIGHT_KEYS.fileKey, LIGHT_KEYS.relativePath)
+                .putLong(LIGHT_KEYS.revisionKey, System.currentTimeMillis())
+                .putBoolean(KEY_LEGACY_MIGRATED, true)
+                .remove(HomeUiDefaults.PENDING_WALLPAPER)
+                .commit())
+        } finally {
+            temporary.delete()
+        }
     }
 
     /** Carry the wallpaper selected in the previous manager UI into Aster's light slot. */
@@ -123,6 +154,7 @@ internal class HomeWallpaperStore(context: Context) {
             Os.rename(temporary.absolutePath, target.absolutePath)
 
             val editor = preferences.edit()
+                .remove(HomeUiDefaults.PENDING_WALLPAPER)
                 .putBoolean(KEY_ENABLED, true)
                 .putString(keys.fileKey, keys.relativePath)
                 .putFloat(keys.zoomKey, HomeWallpaperCrop.Default.zoom)
@@ -172,6 +204,7 @@ internal class HomeWallpaperStore(context: Context) {
         removed.forEach(::deleteStoredFile)
 
         val editor = preferences.edit()
+            .remove(HomeUiDefaults.PENDING_WALLPAPER)
             .remove(KEY_NIGHT_ENABLED)
         removed.forEach { removedSlot ->
             val keys = keys(removedSlot)

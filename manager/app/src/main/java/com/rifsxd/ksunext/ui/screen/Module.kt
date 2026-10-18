@@ -719,9 +719,9 @@ private fun ModuleList(
                     }
                 }
                 else -> {
-                    items(viewModel.moduleList) { module ->
+                    items(viewModel.moduleList, key = { it.id }) { module ->
                         val scope = rememberCoroutineScope()
-                        val updatedModule by produceState(key1 = module.id, initialValue = Triple("", "", "")) {
+                        val updatedModule by produceState(key1 = module, initialValue = Triple("", "", "")) {
                             value = withContext(Dispatchers.IO) {
                                 viewModel.checkUpdate(module)
                             }
@@ -1006,20 +1006,22 @@ fun ModuleItem(
                             alpha = 0.18f
                         )
                     } else {
-                        val bannerData = remember(module.banner) {
-                            try {
-                                val file = SuFile("/data/adb/modules/${module.id}/${module.banner}")
-                                return@remember file.newInputStream().use { it.readBytes() }
-                            } catch (_: Exception) {
-                            }
+                        val bannerData by produceState<ByteArray?>(initialValue = null, key1 = module) {
+                            value = withContext(Dispatchers.IO) {
+                                try {
+                                    val file = SuFile("/data/adb/modules/${module.id}/${module.banner}")
+                                    return@withContext file.newInputStream().use { it.readBytes() }
+                                } catch (_: Exception) {
+                                }
 
-                            try {
-                                val file = SuFile("/data/adb/modules_update/${module.id}/${module.banner}")
-                                return@remember file.newInputStream().use { it.readBytes() }
-                            } catch (_: Exception) {
-                            }
+                                try {
+                                    val file = SuFile("/data/adb/modules_update/${module.id}/${module.banner}")
+                                    return@withContext file.newInputStream().use { it.readBytes() }
+                                } catch (_: Exception) {
+                                }
 
-                            null
+                                null
+                            }
                         }
                         if (bannerData != null) {
                             AsyncImage(

@@ -15,8 +15,11 @@ import com.rifsxd.ksunext.ui.util.getModuleSize
 import com.rifsxd.ksunext.ui.util.listModules
 import com.rifsxd.ksunext.ui.util.zygiskRequired
 import com.rifsxd.ksunext.ui.util.isZygiskImpl
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -29,6 +32,9 @@ class ModuleViewModel : ViewModel() {
     companion object {
         private const val TAG = "ModuleViewModel"
         private var modules by mutableStateOf<List<ModuleInfo>>(emptyList())
+        // Home and the module screen have separate ViewModels but share this list.
+        // Serialize reads so an older refresh cannot replace a newer snapshot.
+        private val refreshMutex = Mutex()
     }
 
     class ModuleInfo(
@@ -92,9 +98,7 @@ class ModuleViewModel : ViewModel() {
             it.id.contains(search, ignoreCase = true) ||
             it.name.contains(search, ignoreCase = true) ||
             HanziToPinyin.getInstance().toPinyinString(it.name).contains(search, ignoreCase = true)
-        }.sortedWith(comparator).also {
-            isRefreshing = false
-        }
+        }.sortedWith(comparator)
     }
 
 
@@ -116,19 +120,14 @@ class ModuleViewModel : ViewModel() {
     }
 
     fun fetchModuleList() = viewModelScope.launch {
-
+        refreshMutex.withLock {
             isRefreshing = true
-
-            withContext(Dispatchers.IO) {
-                val start = SystemClock.elapsedRealtime()
-                val oldModuleList = modules
-
-                kotlin.runCatching {
+            val start = SystemClock.elapsedRealtime()
+            try {
+                val refreshedModules = withContext(Dispatchers.IO) {
                     val result = listModules()
-                    Log.i(TAG, "result: $result")
-
                     val array = JSONArray(result)
-                    modules = (0 until array.length())
+                    (0 until array.length())
                         .asSequence()
                         .map { array.getJSONObject(it) }
                         .map { obj ->
@@ -167,20 +166,21 @@ class ModuleViewModel : ViewModel() {
                                 obj.optString("preinit")
                             )
                         }.toList()
-                    isNeedRefresh = false
-                }.onFailure { e ->
-                    Log.e(TAG, "fetchModuleList: ", e)
-                    isRefreshing = false
                 }
-
-                // when both old and new is kotlin.collections.EmptyList
-                // moduleList update will don't trigger
-                if (oldModuleList === modules) {
-                    isRefreshing = false
-                }
-
-                Log.i(TAG, "load cost: ${SystemClock.elapsedRealtime() - start}, modules: $modules")
+                // Publish one complete snapshot on Main; reading/filtering the list
+                // must never be responsible for completing a refresh.
+                modules = refreshedModules
+                isNeedRefresh = false
+                Log.i(TAG, "Module refresh complete: ${modules.size} modules, ${SystemClock.elapsedRealtime() - start}ms")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Keep the last good snapshot when a refresh cannot be read/parsed.
+                Log.e(TAG, "fetchModuleList: ", e)
+            } finally {
+                isRefreshing = false
             }
+        }
     }
 
     private fun sanitizeVersionString(version: String): String {

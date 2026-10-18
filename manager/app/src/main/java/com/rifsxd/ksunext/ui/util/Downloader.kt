@@ -64,8 +64,9 @@ fun download(
 }
 
 fun checkNewVersion(preferSpoofed: Boolean? = null): LatestVersionInfo {
-    // Next version updates
-    val url = "https://api.github.com/repos/KernelSU-Next/KernelSU-Next/releases/latest"
+    // This manager has its own UI and signing identity. Only offer this fork's releases;
+    // a missing release must not fall back to an upstream APK.
+    val url = "https://api.github.com/repos/Maga-King/KernelSU-Next/releases/latest"
     // default null value if failed
     val defaultValue = LatestVersionInfo()
     runCatching {

@@ -12,6 +12,7 @@
   <string name="home_not_installed">نصب نشده</string>
   <string name="home_click_to_install">برای نصب کلیک کنید</string>
   <string name="home_working">درحال انجام</string>
+  <string name="home_activated">فعال</string>
   <string name="home_module_update_count">به روزرسانی ها: %d</string>
   <string name="home_failure">پشتیبانی نشده | ادغام نشده</string>
   <string name="home_failure_tip">کرنل‌های غیر GKI پشتیبانی نمی شوند. درایور KernelSU-Next Legacy را در کرنل خود ادغام کنید!</string>

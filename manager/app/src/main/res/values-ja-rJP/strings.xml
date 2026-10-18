@@ -12,6 +12,7 @@
   <string name="home_not_installed">未インストール</string>
   <string name="home_click_to_install">タップでインストール</string>
   <string name="home_working">動作中</string>
+  <string name="home_activated">有効</string>
   <string name="home_module_update_count">更新: %d</string>
   <string name="home_failure">非対応 | 統合されていません</string>
   <string name="home_failure_tip">GKI 以外のカーネルは非対応です。KernelSU-Next レガシードライバをカーネルに統合してください！</string>

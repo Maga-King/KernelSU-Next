@@ -12,6 +12,7 @@
   <string name="home_not_installed">未安装</string>
   <string name="home_click_to_install">点击安装</string>
   <string name="home_working">工作中</string>
+  <string name="home_activated">已激活</string>
   <string name="home_module_update_count">%d 个模块可更新</string>
   <string name="home_failure">不支持 | 未集成</string>
   <string name="home_failure_tip">不支持非 GKI 内核。请将 KernelSU-Next 传统驱动程序集成到您的内核中！</string>

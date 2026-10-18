@@ -12,6 +12,7 @@
   <string name="home_not_installed">Nicht Installiert</string>
   <string name="home_click_to_install">Klicken zum Installieren</string>
   <string name="home_working">Arbeitet</string>
+  <string name="home_activated">Aktiviert</string>
   <string name="home_module_update_count">Aktualisierungen: %d</string>
   <string name="home_failure">Nicht unterstützt | Nicht integriert</string>
   <string name="home_failure_tip">Non-GKI Kernel sind nicht unterstützt. Bitte integriere die KernelSU-Next legacy Treiber in deinen Kernel!</string>

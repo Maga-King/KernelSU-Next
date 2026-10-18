@@ -12,6 +12,7 @@
   <string name="home_not_installed">Tidak terpasang</string>
   <string name="home_click_to_install">Ketuk untuk memasang</string>
   <string name="home_working">Berfungsi</string>
+  <string name="home_activated">Aktif</string>
   <string name="home_module_update_count">Pembaruan: %d</string>
   <string name="home_failure">Tidak didukung | Tidak terintegrasi</string>
   <string name="home_failure_tip">Kernel Non-GKI tidak didukung. Integrasikan driver KernelSU-Next legacy ke dalam kernel Anda!</string>

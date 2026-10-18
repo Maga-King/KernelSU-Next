@@ -12,6 +12,7 @@
   <string name="home_not_installed">Não instalado</string>
   <string name="home_click_to_install">Clique para instalar</string>
   <string name="home_working">Em execução</string>
+  <string name="home_activated">Ativado</string>
   <string name="home_module_update_count">Atualizações: %d</string>
   <string name="home_failure">Não suportado | Não integrado</string>
   <string name="home_failure_tip">Kernels não-GKI não são suportados. Integre o driver legado Kernelsu-next em seu kernel!</string>

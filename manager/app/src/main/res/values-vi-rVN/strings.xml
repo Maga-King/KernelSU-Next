@@ -12,6 +12,7 @@
   <string name="home_not_installed">Chưa cài đặt</string>
   <string name="home_click_to_install">Nhấn để cài đặt</string>
   <string name="home_working">Đang hoạt động</string>
+  <string name="home_activated">Đã kích hoạt</string>
   <string name="home_module_update_count">Cập nhật: %d</string>
   <string name="home_failure">Không hỗ trợ | Chưa được tích hợp</string>
   <string name="home_failure_tip">Kernel Non-GKI không được hỗ trợ. Hãy tích hợp trình điều khiển cũ KernelSU-Next vào kernel của bạn!</string>

@@ -12,6 +12,7 @@
   <string name="home_not_installed">स्थापित नहीं हे</string>
   <string name="home_click_to_install">स्थापित करने के लिए क्लिक करे</string>
   <string name="home_working">कार्यरत</string>
+  <string name="home_activated">सक्रिय</string>
   <string name="home_module_update_count">Updates: %d</string>
   <string name="home_failure">Unsupported | Not integrated</string>
   <string name="home_failure_tip">Non-GKI kernels are not supported. Integrate KernelSU-Next legacy driver in your kernel!</string>

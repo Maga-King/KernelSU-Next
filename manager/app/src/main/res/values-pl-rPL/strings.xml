@@ -12,6 +12,7 @@
   <string name="home_not_installed">Nie zainstalowany</string>
   <string name="home_click_to_install">Naciśnij, aby zainstalować</string>
   <string name="home_working">Działa</string>
+  <string name="home_activated">Aktywowano</string>
   <string name="home_module_update_count">Aktualizacje: %d</string>
   <string name="home_failure">Nieobsługiwany | Niezintegrowany</string>
   <string name="home_failure_tip">Jądra Non-GKI nie są obsługiwane. Zintegruj sterownik z brancha legacy KernelSU-Next ze swoim jądrem!</string>
