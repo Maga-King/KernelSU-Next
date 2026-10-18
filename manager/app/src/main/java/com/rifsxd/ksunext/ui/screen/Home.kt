@@ -254,29 +254,6 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                     MaterialTheme.colorScheme.onTertiaryContainer,
                 )
             }
-            if (fullFeatured) {
-                AsterResponsivePair(
-                    first = {
-                        SuperuserCard(refreshToken = refreshToken, onClick = {
-                            navigator.navigate(SuperUserScreenDestination) {
-                                popUpTo(NavGraphs.root.startRoute) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        })
-                    },
-                    second = {
-                        ModuleCard(refreshToken = refreshToken, onClick = {
-                            navigator.navigate(ModuleScreenDestination) {
-                                popUpTo(NavGraphs.root.startRoute) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        })
-                    }
-                )
-            }
-
             val currentVersionCode = remember(context) { getManagerVersion(context).second }
             val requiresNewKernel = isManager && kernelUAPIVersion != null && managerUAPIVersion > kernelUAPIVersion
             val requiresNewManager = isManager && kernelUAPIVersion != null && managerUAPIVersion < kernelUAPIVersion
@@ -331,6 +308,29 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                     .getBoolean("check_update", true)
             if (checkUpdate) {
                 UpdateCard(refreshToken = refreshToken)
+            }
+
+            if (fullFeatured) {
+                AsterResponsivePair(
+                    first = {
+                        SuperuserCard(refreshToken = refreshToken, onClick = {
+                            navigator.navigate(SuperUserScreenDestination) {
+                                popUpTo(NavGraphs.root.startRoute) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        })
+                    },
+                    second = {
+                        ModuleCard(refreshToken = refreshToken, onClick = {
+                            navigator.navigate(ModuleScreenDestination) {
+                                popUpTo(NavGraphs.root.startRoute) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        })
+                    }
+                )
             }
 
             InfoCard(autoExpand = developerOptionsEnabled, refreshToken = refreshToken)
