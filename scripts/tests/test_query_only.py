@@ -17,7 +17,7 @@ SOURCE = ROOT / 'kernel/feature/selinux_hide.c'
 
 
 def extract_function(source, name):
-    match = re.search(r'static (?:int|bool)\s+' + re.escape(name) + r'\([^;{]*\)\s*\{', source)
+    match = re.search(r'static (?:int|bool|ssize_t)\s+' + re.escape(name) + r'\([^;{]*\)\s*\{', source)
     if not match:
         raise AssertionError(f'Production function definition missing: {name}')
     depth = 1
@@ -234,10 +234,14 @@ int main(int argc, char **argv)
 
 
 SCOPE_HARNESS = r'''
+#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <errno.h>
 typedef uint32_t u32;
 #define PER_USER_RANGE 100000
 #define SYM_TYPES 3
@@ -252,6 +256,7 @@ struct kuid { u32 val; };
 static struct kuid caller_uid = {10001};
 static struct context caller_context = {3, 0};
 static struct type_datum attribute = {7, 1};
+static struct type_datum app_type = {3, 0}, zygote_type = {4, 0}, root_type = {5, 0};
 static struct ebitmap maps[8] = {{0}, {0}, {1U << 6}};
 static struct sidtab live_sids;
 static struct selinux_policy active = {{ {8}, maps }, &live_sids};
@@ -275,15 +280,85 @@ static const char *sym_name(struct policydb *db, int kind, u32 index)
 }
 static struct type_datum *symtab_search(struct symtab *table, const char *name)
 {
-    assert(depth == 1 && table == &active.policydb.p_types && !strcmp(name, "appdomain"));
-    return missing_attribute ? NULL : &attribute;
+    assert(depth == 1 && table == &active.policydb.p_types);
+    if (!strcmp(name, "appdomain")) return missing_attribute ? NULL : &attribute;
+    if (!strcmp(name, "live_app")) return &app_type;
+    if (!strcmp(name, "app_zygote")) return &zygote_type;
+    if (!strcmp(name, "ksu") || !strcmp(name, "su") || !strcmp(name, "ksu_file"))
+        return &root_type;
+    return NULL;
 }
 static int ebitmap_get_bit(struct ebitmap *map, unsigned int bit)
 {
-    assert(depth == 1 && map == &maps[2] && bit == 6);
+    assert(depth == 1 && map >= maps && map < maps + 8 && bit == 6);
     return !!(map->bits & (1U << bit));
 }
+#define GFP_KERNEL 123
+#define SECSID_NULL 0
+#define SECINITSID_SECURITY 2
+#define SECCLASS_SECURITY 3
+#define SECURITY__CHECK_CONTEXT 4
+#define SIMPLE_TRANSACTION_LIMIT 4096
+#define pr_err(...) ((void)0)
+struct file { int unused; };
+static int oom, allocations, frees, native_calls, reference_calls, denied;
+static struct selinux_policy private_reference;
+static struct selinux_policy *backup_sepolicy = &private_reference;
+static char *kmemdup_nul(const char *input, size_t size, unsigned int flags)
+{
+    char *copy;
+    assert(flags == GFP_KERNEL && depth == 0);
+    if (oom) return NULL;
+    copy = malloc(size + 1); assert(copy);
+    memcpy(copy, input, size); copy[size] = '\0'; ++allocations;
+    return copy;
+}
+static void kfree(void *p) { if (p) { free(p); ++frees; } }
+static ssize_t orig_context_write(struct file *file, char *buf, size_t size)
+{
+    size_t len = strnlen(buf, size);
+    (void)file;
+    assert(depth == 0); ++native_calls;
+    if ((len == strlen("u:r:live_app:s0") && !memcmp(buf, "u:r:live_app:s0", len)) ||
+        (len == strlen("u:r:app_zygote:s0") && !memcmp(buf, "u:r:app_zygote:s0", len)) ||
+        (len == strlen("u:r:ksu:s0") && !memcmp(buf, "u:r:ksu:s0", len)))
+        return 19;
+    return -EINVAL;
+}
+static int ksu_avc_has_perm_compat(u32 sid, int target, int class, int perm, void *audit)
+{
+    assert(sid == 513 && target == 2 && class == 3 && perm == 4 && !audit);
+    return denied ? -EACCES : 0;
+}
+static int security_context_to_sid_with_policy(struct selinux_policy *policy, const char *buf,
+                                              u32 size, u32 *sid, u32 def, unsigned int flags)
+{
+    (void)buf; (void)size; (void)sid;
+    assert(policy == &private_reference && def == 0 && flags == GFP_KERNEL);
+    ++reference_calls;
+    return -EINVAL; /* These probes are intentionally absent from the reference. */
+}
+static int security_sid_to_context_with_policy(struct selinux_policy *policy, u32 sid,
+                                              char **buf, u32 *size)
+{
+    (void)policy; (void)sid; (void)buf; (void)size;
+    assert(!"Rejected reference contexts cannot be canonicalized");
+    return -EINVAL;
+}
 /* PRODUCTION_FUNCTIONS */
+static void route(const char *input, size_t size, bool native, ssize_t expected)
+{
+    char buf[128], before[128];
+    int old_native = native_calls, old_reference = reference_calls;
+    assert(size <= sizeof(buf));
+    memset(buf, 0x5a, sizeof(buf)); memcpy(buf, input, size); memcpy(before, buf, sizeof(buf));
+    assert(my_write_context(NULL, buf, size) == expected);
+    assert(native_calls == old_native + native);
+    assert(reference_calls == old_reference + (!native && !denied));
+    assert(allocations == frees && depth == 0);
+    assert(!memcmp(buf, before, sizeof(buf)));
+}
+#define ROUTE(input, native, expected) route(input, sizeof(input) - 1, native, expected)
 static void check(bool expected)
 {
     struct context before = caller_context;
@@ -299,7 +374,7 @@ static void check(bool expected)
 }
 int main(void)
 {
-    const char *zygotes[] = {"zygote", "app_zygote", "webview_zygote", "vendor_zygote64"};
+    const char *zygotes[] = {"zygote", "webview_zygote", "vendor_zygote64"};
     unsigned int i;
     check(true);
     /* UID is already the app UID but the SELinux transition has not happened. */
@@ -307,6 +382,9 @@ int main(void)
         domain = zygotes[i];
         check(false); /* Deliberately still marked appdomain, as app_zygote can be. */
     }
+    domain = "app_zygote"; check(true);
+    domain = "vendor_app_zygote"; check(true);
+    maps[2].bits = 0; check(true); maps[2].bits = 1U << 6;
     domain = "untrusted_app";
     check(true); /* The same UID becomes eligible only after specialization. */
     caller_uid.val = 0; check(false);
@@ -331,6 +409,28 @@ int main(void)
     attribute.attribute = 0; check(false); attribute.attribute = 1;
     attribute.value = 0; check(false); attribute.value = 7;
     check(true);
+    domain = "app_zygote";
+    ROUTE("u:r:live_app:s0", true, 19);
+    ROUTE("u:r:app_zygote:s0", true, 19);
+    ROUTE("u:bad:live_app:s0", true, -EINVAL);
+    ROUTE("u:r:live_app:s99", true, -EINVAL);
+    ROUTE("bad:r:live_app:s0", true, -EINVAL);
+    ROUTE("u:r:live_app", true, -EINVAL);
+    ROUTE("u:r:ksu:s0", false, -EINVAL);
+    ROUTE("u:r:su:s0", false, -EINVAL);
+    ROUTE("u:r:ksu_file:s0", false, -EINVAL);
+    ROUTE("u:r:sentinel:s0", false, -EINVAL);
+    ROUTE("u:r:appdomain:s0", false, -EINVAL);
+    ROUTE("u:r:ksu\0:live_app:s0", false, -EINVAL);
+    ROUTE("u:r:live_app\0:ksu:s0", true, -EINVAL);
+    ROUTE("u:r:", false, -EINVAL);
+    ROUTE("u", false, -EINVAL);
+    ROUTE("", false, -EINVAL);
+    oom = 1; ROUTE("u:r:ksu:s0", true, 19); oom = 0;
+    missing_attribute = 1; ROUTE("u:r:live_app:s0", true, 19); missing_attribute = 0;
+    app_type.value = 0; ROUTE("u:r:live_app:s0", true, 19); app_type.value = 3;
+    denied = 1; ROUTE("u:r:ksu:s0", false, -EACCES); denied = 0;
+    domain = "zygote"; ROUTE("u:r:ksu:s0", true, 19);
     return 0;
 }
 '''
@@ -349,14 +449,18 @@ class QueryOnlyTests(unittest.TestCase):
         self.assertIsNone(re.search(r'\bselinux_state\.policy\s*=(?!=)', source))
         for name in ('string_to_context_struct', 'security_context_to_sid_with_policy'):
             self.assertNotIn('selinux_state', extract_function(source, name))
+        self.assertNotIn('context_needs_native_validation', extract_function(source, 'my_write_access'))
+        self.assertIn('should_spoof_query()', extract_function(source, 'my_write_access'))
+        self.assertIn('should_spoof_query()', extract_function(source, 'my_sel_open_handle_status'))
 
-    def test_actual_scope_excludes_unspecialized_zygotes_and_system_uids(self):
+    def test_scope_keeps_app_zygote_probes_and_context_routing_preserves_validation(self):
         compiler = shutil.which('cc') or shutil.which('clang') or shutil.which('gcc')
         if not compiler:
             self.skipTest('A host C compiler is required')
         source = SOURCE.read_text(encoding='utf-8')
-        harness = SCOPE_HARNESS.replace('/* PRODUCTION_FUNCTIONS */',
-                                       extract_function(source, 'should_spoof_query'))
+        functions = '\n\n'.join(extract_function(source, name) for name in (
+            'should_spoof_query', 'context_needs_native_validation', 'my_write_context'))
+        harness = SCOPE_HARNESS.replace('/* PRODUCTION_FUNCTIONS */', functions)
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp)
             (path / 'scope.c').write_text(harness, encoding='utf-8')

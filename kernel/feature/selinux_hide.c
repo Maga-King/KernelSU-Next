@@ -110,12 +110,18 @@ static bool should_spoof_query(void)
     if (!type || type > db->p_types.nprim || !db->type_attr_map_array)
         goto out;
 
-    /* Zygote drops UID before security_check_context() and setcon(). Even
-     * app_zygote can be an appdomain: leave every zygote type on real policy.
-     * This is a policy type name, never a mutable process/task name.
+    /* App preload probes execute inside app_zygote, before ordinary app code.
+     * Keep that carrier in scope; the system zygote stays on native queries.
+     * These are live policy type names, never mutable process/task names.
      */
     type_name = sym_name(db, SYM_TYPES, type - 1);
-    if (!type_name || strstr(type_name, "zygote"))
+    if (!type_name)
+        goto out;
+    if (strstr(type_name, "app_zygote")) {
+        spoof = true;
+        goto out;
+    }
+    if (strstr(type_name, "zygote"))
         goto out;
     appdomain = symtab_search(&db->p_types, "appdomain");
     if (!appdomain || !appdomain->attribute || !appdomain->value)
@@ -126,9 +132,66 @@ out:
     return spoof;
 }
 
+static bool context_needs_native_validation(const char *buf, size_t size)
+{
+    struct selinux_policy *policy;
+    struct policydb *db;
+    struct type_datum *type, *appdomain;
+    const char *end, *user_end, *role_end, *type_start, *type_end;
+    char *type_name;
+    bool native = true;
+
+    /* Classify only the bounded type token. The native handler must validate
+     * the complete user/role/type/MLS request and decide its final result.
+     */
+    end = buf + strnlen(buf, size);
+    user_end = memchr(buf, ':', end - buf);
+    if (!user_end)
+        return false;
+    role_end = memchr(user_end + 1, ':', end - user_end - 1);
+    if (!role_end)
+        return false;
+    type_start = role_end + 1;
+    type_end = memchr(type_start, ':', end - type_start);
+    if (!type_end)
+        type_end = end;
+    if (type_end == type_start)
+        return false;
+    type_name = kmemdup_nul(type_start, type_end - type_start, GFP_KERNEL);
+    if (!type_name)
+        return true;
+
+    rcu_read_lock();
+    policy = rcu_dereference(selinux_state.policy);
+    if (!policy)
+        goto out;
+    db = &policy->policydb;
+    type = symtab_search(&db->p_types, type_name);
+    if (!type || type->attribute) {
+        native = false;
+        goto out;
+    }
+    if (!type->value || type->value > db->p_types.nprim || !db->type_attr_map_array)
+        goto out;
+    appdomain = symtab_search(&db->p_types, "appdomain");
+    if (!appdomain || !appdomain->attribute || !appdomain->value)
+        goto out;
+
+    /* Android validates the destination before setcon, including children of
+     * app_zygote. Known app domains must validate against this ROM. Root/file
+     * markers and nonexistent contexts still use the query reference.
+     */
+    native = strstr(type_name, "app_zygote") ||
+             ebitmap_get_bit(&db->type_attr_map_array[type->value - 1], appdomain->value - 1);
+out:
+    rcu_read_unlock();
+    kfree(type_name);
+    return native;
+}
+
 static ssize_t my_write_context(struct file *file, char *buf, size_t size)
 {
-    if (!should_spoof_query()) {
+    if (!should_spoof_query() || context_needs_native_validation(buf, size)) {
         return orig_context_write(file, buf, size);
     }
     char *canon = NULL;

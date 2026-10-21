@@ -14,7 +14,9 @@ ColorOS17 来自 PJZ110_17.0.0.103(CN01) 的五分区静态 CIL。HyperOS 来自
 
 2026-10-21 已移除上游的 `setprocattr` 拦截，并取消查询时向活动 SID 表同步。真实应用域切换由原生 SELinux 和当前 ROM 策略处理，即使参考里缺少该 ROM 的域也不再拦截启动。旧内核或旧 LKM 需要重新编译并更新，单换管理器不会修复内核中的旧代码。应用若根据查询结果自行决定行为，仍可能受到返回值影响。
 
-查询入口会读取调用者的真实域，只对已经进入 `appdomain` 的应用生效；zygote 及其派生域、其他系统域均走原生查询。这样避免 Android 子进程先降 UID 后，启动前的 `security_check_context()` 误用静态参考。多用户的系统 UID 同样不会被当作应用。
+查询入口读取调用者的真实域，覆盖 `appdomain` 和 `app_zygote` 预加载；系统 zygote、其他系统域及多用户的系统 UID 走原生查询。Hunter、Duck、春秋都会在 `app_zygote` 里做检查，因此不能整个跳过该域。
+
+Android 在真正 `setcon()` 前会先调用 `security_check_context()`。为保护启动，`/context` 请求若指定当前 ROM 已知的应用域，交给原始处理器完整验证用户、角色和 MLS；不会只凭类型存在就返回成功，也不会在原生拒绝后改用参考放行。其他上下文、`/access` 权限矩阵和状态查询保留参考视图。模块若把自己的类型加入真实 `appdomain`，该类型也会落入原生上下文校验范围。
 
 如果由其他 workflow 调用 `build-lkm.yml`，传入：
 
