@@ -29,6 +29,7 @@
 #include "hook/patch_memory.h"
 #include "ksu.h"
 #include "policy/feature.h"
+#include "policy/allowlist.h"
 
 static DEFINE_MUTEX(selinux_hide_mutex);
 static bool ksu_selinux_hide_enabled __read_mostly = false;
@@ -83,10 +84,51 @@ static write_op_fn orig_context_write, orig_access_write;
 #define ksu_avc_has_perm_compat(...) avc_has_perm(&selinux_state, __VA_ARGS__)
 #endif
 
+static bool should_spoof_query(void)
+{
+    struct selinux_policy *policy;
+    struct policydb *db;
+    struct context *context;
+    struct type_datum *appdomain;
+    const char *type_name;
+    u32 type;
+    bool spoof = false;
+
+    /* Multi-user system UIDs must not be mistaken for application UIDs. */
+    if (current_uid().val % PER_USER_RANGE < 10000)
+        return false;
+
+    rcu_read_lock();
+    policy = rcu_dereference(selinux_state.policy);
+    if (!policy || !policy->sidtab)
+        goto out;
+    db = &policy->policydb;
+    context = sidtab_search(policy->sidtab, current_sid());
+    if (!context || context->len)
+        goto out;
+    type = context->type;
+    if (!type || type > db->p_types.nprim || !db->type_attr_map_array)
+        goto out;
+
+    /* Zygote drops UID before security_check_context() and setcon(). Even
+     * app_zygote can be an appdomain: leave every zygote type on real policy.
+     * This is a policy type name, never a mutable process/task name.
+     */
+    type_name = sym_name(db, SYM_TYPES, type - 1);
+    if (!type_name || strstr(type_name, "zygote"))
+        goto out;
+    appdomain = symtab_search(&db->p_types, "appdomain");
+    if (!appdomain || !appdomain->attribute || !appdomain->value)
+        goto out;
+    spoof = ebitmap_get_bit(&db->type_attr_map_array[type - 1], appdomain->value - 1);
+out:
+    rcu_read_unlock();
+    return spoof;
+}
+
 static ssize_t my_write_context(struct file *file, char *buf, size_t size)
 {
-    // apply to all app uids
-    if (likely(current_uid().val < 10000)) {
+    if (!should_spoof_query()) {
         return orig_context_write(file, buf, size);
     }
     char *canon = NULL;
@@ -123,8 +165,7 @@ out:
 
 static ssize_t my_write_access(struct file *file, char *buf, size_t size)
 {
-    // apply to all app uids
-    if (likely(current_uid().val < 10000)) {
+    if (!should_spoof_query()) {
         return orig_access_write(file, buf, size);
     }
     char *scon = NULL, *tcon = NULL;
@@ -238,7 +279,7 @@ typedef int (*sel_open_handle_status_fn)(struct inode *inode, struct file *filp)
 static sel_open_handle_status_fn orig_sel_open_handle_status, *sel_open_handle_status_slot;
 static int my_sel_open_handle_status(struct inode *inode, struct file *filp)
 {
-    if (likely(current_uid().val >= 10000 && ksu_selinux_hide_enabled)) {
+    if (ksu_selinux_hide_enabled && should_spoof_query()) {
         void *data;
         mutex_lock(&selinux_state.status_lock);
         data = fake_status;

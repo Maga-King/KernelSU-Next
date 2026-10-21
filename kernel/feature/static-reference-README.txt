@@ -3,6 +3,9 @@
 2026-10-21：修复参考策略干预真实应用启动的问题。
 移除继承自上游的 setprocattr 拦截，进程域切换全部交回原生 SELinux。
 查询上下文只在参考策略的私有 SID 表内解析，不再向活动策略同步 SID。
+查询入口还要确认调用者已进入真实 appdomain，并排除 zygote、app_zygote、webview_zygote 及带 zygote 的厂商域。
+不能只判断 UID：Android 先降 UID，再做 security_check_context 和 setcon；启动前校验必须仍使用真实策略。
+读取活动策略仅用于判定调用者身份，不向活动策略或 SID 表写入。
 本修复同时适用于动态备份和三套静态参考，参考 policy 文件本身没有修改。
 
 2026-10-18：LKM workflow 新增开关及 OriginOS / ColorOS17 / HyperOS 三选一。

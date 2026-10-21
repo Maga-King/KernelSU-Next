@@ -17,7 +17,7 @@ SOURCE = ROOT / 'kernel/feature/selinux_hide.c'
 
 
 def extract_function(source, name):
-    match = re.search(r'static int\s+' + re.escape(name) + r'\([^;{]*\)\s*\{', source)
+    match = re.search(r'static (?:int|bool)\s+' + re.escape(name) + r'\([^;{]*\)\s*\{', source)
     if not match:
         raise AssertionError(f'Production function definition missing: {name}')
     depth = 1
@@ -233,16 +233,139 @@ int main(int argc, char **argv)
 '''
 
 
+SCOPE_HARNESS = r'''
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+typedef uint32_t u32;
+#define PER_USER_RANGE 100000
+#define SYM_TYPES 3
+struct context { u32 type; unsigned int len; };
+struct type_datum { u32 value; int attribute; };
+struct symtab { u32 nprim; };
+struct ebitmap { unsigned int bits; };
+struct policydb { struct symtab p_types; struct ebitmap *type_attr_map_array; };
+struct sidtab { int unused; };
+struct selinux_policy { struct policydb policydb; struct sidtab *sidtab; };
+struct kuid { u32 val; };
+static struct kuid caller_uid = {10001};
+static struct context caller_context = {3, 0};
+static struct type_datum attribute = {7, 1};
+static struct ebitmap maps[8] = {{0}, {0}, {1U << 6}};
+static struct sidtab live_sids;
+static struct selinux_policy active = {{ {8}, maps }, &live_sids};
+static struct { struct selinux_policy *policy; } selinux_state = {&active};
+static const char *domain = "untrusted_app";
+static int depth, missing_context, missing_attribute;
+static struct kuid current_uid(void) { return caller_uid; }
+static void rcu_read_lock(void) { assert(depth == 0); ++depth; }
+static void rcu_read_unlock(void) { assert(depth == 1); --depth; }
+#define rcu_dereference(pointer) (assert(depth == 1), (pointer))
+static u32 current_sid(void) { return 513; }
+static struct context *sidtab_search(struct sidtab *table, u32 sid)
+{
+    assert(depth == 1 && table == &live_sids && sid == 513);
+    return missing_context ? NULL : &caller_context;
+}
+static const char *sym_name(struct policydb *db, int kind, u32 index)
+{
+    assert(depth == 1 && db == &active.policydb && kind == SYM_TYPES && index == 2);
+    return domain;
+}
+static struct type_datum *symtab_search(struct symtab *table, const char *name)
+{
+    assert(depth == 1 && table == &active.policydb.p_types && !strcmp(name, "appdomain"));
+    return missing_attribute ? NULL : &attribute;
+}
+static int ebitmap_get_bit(struct ebitmap *map, unsigned int bit)
+{
+    assert(depth == 1 && map == &maps[2] && bit == 6);
+    return !!(map->bits & (1U << bit));
+}
+/* PRODUCTION_FUNCTIONS */
+static void check(bool expected)
+{
+    struct context before = caller_context;
+    struct policydb policy_before = active.policydb;
+    struct ebitmap maps_before[8];
+    memcpy(maps_before, maps, sizeof(maps));
+    assert(depth == 0);
+    assert(should_spoof_query() == expected);
+    assert(depth == 0);
+    assert(!memcmp(&before, &caller_context, sizeof(before)));
+    assert(!memcmp(&policy_before, &active.policydb, sizeof(policy_before)));
+    assert(!memcmp(maps_before, maps, sizeof(maps)));
+}
+int main(void)
+{
+    const char *zygotes[] = {"zygote", "app_zygote", "webview_zygote", "vendor_zygote64"};
+    unsigned int i;
+    check(true);
+    /* UID is already the app UID but the SELinux transition has not happened. */
+    for (i = 0; i < sizeof(zygotes) / sizeof(zygotes[0]); ++i) {
+        domain = zygotes[i];
+        check(false); /* Deliberately still marked appdomain, as app_zygote can be. */
+    }
+    domain = "untrusted_app";
+    check(true); /* The same UID becomes eligible only after specialization. */
+    caller_uid.val = 0; check(false);
+    caller_uid.val = 1000; check(false);
+    caller_uid.val = 101000; check(false);
+    caller_uid.val = 110001; check(true);
+    caller_uid.val = 199001; check(true);
+    caller_uid.val = 10001;
+    domain = "vendor_service";
+    maps[2].bits = 0; check(false); maps[2].bits = 1U << 6;
+    domain = "untrusted_app";
+    selinux_state.policy = NULL; check(false); selinux_state.policy = &active;
+    active.sidtab = NULL; check(false); active.sidtab = &live_sids;
+    missing_context = 1; check(false); missing_context = 0;
+    caller_context.len = 9; check(false); caller_context.len = 0;
+    caller_context.type = 0; check(false);
+    caller_context.type = 9; check(false); caller_context.type = 3;
+    active.policydb.type_attr_map_array = NULL; check(false);
+    active.policydb.type_attr_map_array = maps;
+    domain = NULL; check(false); domain = "untrusted_app";
+    missing_attribute = 1; check(false); missing_attribute = 0;
+    attribute.attribute = 0; check(false); attribute.attribute = 1;
+    attribute.value = 0; check(false); attribute.value = 7;
+    check(true);
+    return 0;
+}
+'''
+
+
 class QueryOnlyTests(unittest.TestCase):
-    def test_no_enforcement_hook_or_live_policy_access(self):
+    def test_no_enforcement_hook_or_live_policy_mutation(self):
         source = SOURCE.read_text(encoding='utf-8')
         source = re.sub(r'/\*.*?\*/|//[^\n]*', '', source, flags=re.DOTALL)
         # These are architectural boundaries, not implementation snapshots.
         for forbidden in ('setprocattr', 'ksu_lsm_hook', 'ksu_lsm_unhook',
-                          'prepare_creds', 'commit_creds', 'selinux_state.policy'):
+                          'prepare_creds', 'commit_creds', 'rcu_assign_pointer'):
             with self.subTest(forbidden=forbidden):
                 self.assertIsNone(re.search(r'\b' + re.escape(forbidden) + r'\b', source),
                                   f'Forbidden enforcement dependency: {forbidden}')
+        self.assertIsNone(re.search(r'\bselinux_state\.policy\s*=(?!=)', source))
+        for name in ('string_to_context_struct', 'security_context_to_sid_with_policy'):
+            self.assertNotIn('selinux_state', extract_function(source, name))
+
+    def test_actual_scope_excludes_unspecialized_zygotes_and_system_uids(self):
+        compiler = shutil.which('cc') or shutil.which('clang') or shutil.which('gcc')
+        if not compiler:
+            self.skipTest('A host C compiler is required')
+        source = SOURCE.read_text(encoding='utf-8')
+        harness = SCOPE_HARNESS.replace('/* PRODUCTION_FUNCTIONS */',
+                                       extract_function(source, 'should_spoof_query'))
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp)
+            (path / 'scope.c').write_text(harness, encoding='utf-8')
+            subprocess.run([compiler, '-std=c11', '-Wall', '-Wextra', '-Werror',
+                            '-fsanitize=undefined', '-fno-sanitize-recover=all',
+                            str(path / 'scope.c'), '-o', str(path / 'scope')],
+                           check=True, capture_output=True, text=True)
+            result = subprocess.run([str(path / 'scope')], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_production_converter_uses_private_policy_and_cleans_up(self):
         compiler = shutil.which('cc') or shutil.which('clang') or shutil.which('gcc')

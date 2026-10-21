@@ -14,6 +14,8 @@ ColorOS17 来自 PJZ110_17.0.0.103(CN01) 的五分区静态 CIL。HyperOS 来自
 
 2026-10-21 已移除上游的 `setprocattr` 拦截，并取消查询时向活动 SID 表同步。真实应用域切换由原生 SELinux 和当前 ROM 策略处理，即使参考里缺少该 ROM 的域也不再拦截启动。旧内核或旧 LKM 需要重新编译并更新，单换管理器不会修复内核中的旧代码。应用若根据查询结果自行决定行为，仍可能受到返回值影响。
 
+查询入口会读取调用者的真实域，只对已经进入 `appdomain` 的应用生效；zygote 及其派生域、其他系统域均走原生查询。这样避免 Android 子进程先降 UID 后，启动前的 `security_check_context()` 误用静态参考。多用户的系统 UID 同样不会被当作应用。
+
 如果由其他 workflow 调用 `build-lkm.yml`，传入：
 
 ```yaml
