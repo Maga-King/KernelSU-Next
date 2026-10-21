@@ -1,5 +1,10 @@
 这是固定查询参考策略的实验分支，不是修改手机实际执行策略的工具。
 
+2026-10-21：修复参考策略干预真实应用启动的问题。
+移除继承自上游的 setprocattr 拦截，进程域切换全部交回原生 SELinux。
+查询上下文只在参考策略的私有 SID 表内解析，不再向活动策略同步 SID。
+本修复同时适用于动态备份和三套静态参考，参考 policy 文件本身没有修改。
+
 2026-10-18：LKM workflow 新增开关及 OriginOS / ColorOS17 / HyperOS 三选一。
 使用方法、当前文件摘要与来源以 references/README.md、references/manifest.json 为准。
 reference.policy 仍保留为原来的 OriginOS 默认参考，没有移动或被其他系统覆盖。
@@ -16,7 +21,7 @@ neverallow 不存在于编译后的二进制里；检查范围是本次提取 CI
 
 构建时需要 CONFIG_KSU_STATIC_SELINUX_REFERENCE=y，默认关闭。
 运行时仍需开启 KSUN 原有 selinux_hide。固定参考不改变 feature 开关及原来的作用范围。
-新增代码只替换 backup_sepolicy 的构建来源。
+固定参考只替换 backup_sepolicy 的构建来源；查询消费者与实际进程切换已隔离。
 selinux_state.policy 仍使用真实策略，由上游原有逻辑注入真实 KSU 权限。
 不会在开机时重新清洗策略；开机只解析编译进内核的固定二进制。
 
@@ -26,7 +31,8 @@ selinux_state.policy 仍使用真实策略，由上游原有逻辑注入真实 K
 
 注意：查询结果变了不代表实际安全风险消失。
 有些软件会先查询再决定是否执行，查询视图变化也可能影响它们。
-上游还会用备份验证普通应用的 setcurrent 目标，缺失的上下文会被拒绝。
+当前已移除上游用备份验证 setcurrent 目标的逻辑，参考缺少 ROM 域不会拦截真实域切换。
+这里保证的是不替换内核执行策略和域切换；应用若根据查询结果自行决定行为，仍会受到返回值影响。
 该实验不保证所有 ROM 兼容，也不承诺隐藏所有 root、hook、内核或完整性检测信号。
 后续 ROM 升级可能需要重新制作固定参考，即使 class 编号相同也不能保证业务语义相同。
 

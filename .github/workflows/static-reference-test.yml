@@ -10,6 +10,7 @@ on:
       - 'scripts/select_static_reference.py'
       - 'scripts/tests/test_static_reference.py'
       - 'scripts/tests/test_reference_selection.py'
+      - 'scripts/tests/test_query_only.py'
       - 'scripts/tests/test_manager_signing.py'
       - 'scripts/prepare_manager_signing.py'
       - 'scripts/verify_manager_apk.py'
