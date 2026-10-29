@@ -107,7 +107,12 @@ and daemon output. A disposable preview verified the fresh-install image/crop, r
 the UI surviving a cold launch, and preservation of existing layout, disabled wallpaper and crop.
 The test preview was removed afterwards.
 
-Upstream through `7b5fdb7a` is integrated with the Aster shell. Its preinit module warnings,
+Upstream through `b427a3f9` is integrated with the Aster shell. Its preinit module warnings,
 optional module soft reboot and late-load installation guards are retained; the removed splash
 animation and its now-unused preference are not restored. The fork's static SELinux references,
 manager signing and risk-scan defaults remain in place.
+
+The 2026-10-29 sync removes upstream's block-kernel-modules installation controls and their
+argument plumbing; the developer CLI option remains available. The Aster shell, appearance,
+refresh behavior and fork release update source are retained, as are the query-only SELinux
+fixes through `059a87a5`.

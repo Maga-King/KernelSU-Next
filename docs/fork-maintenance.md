@@ -9,6 +9,8 @@
 | 功能 | 独立实现 | 上游文件中的必要接入 |
 | --- | --- | --- |
 | 固定 SELinux 查询参考 | `kernel/feature/static_reference.{c,h,mk}`、`reference.policy`、生成脚本 | `Kbuild` 的一行 include、`Kconfig` 的选项、`selinux/rules.c` 的 include 和一次调用 |
+| SELinux 查询隔离 | `kernel/feature/selinux_hide.c`、`scripts/tests/test_query_only.py` | 参考策略仅用于查询；真实权限检查、进程转换和系统 zygote 预检沿用活动策略；保留 app zygote 探测和活动 app 上下文校验 |
+| Aster UI | `ui/home/`、`ui/shell/`、主题、动画及组件；详见 `ASTER_UI.md` | 保留全景/标准布局、壁纸与已有设置、刷新行为；上游安装/模块后端变更接入现有 UI，不恢复旧启动动画 |
 | 分支 Manager 证书 | `kernel/manager/fork_manager_certificate.h`、`manager/signing-certificate.json`、签名准备与校验脚本 | `manager/apk_sign.c` 的 include 和两次证书检查；两个 Manager workflow 的签名准备与校验步骤 |
 | 风险扫描默认关闭 | `userspace/ksud/src/risk.rs` 中缺失/不可读配置返回 false | 使用上游配置键 `risk.enabled`；显式开关仍由上游处理 |
 | 分支说明 | 本文、`fork-manager-signing.md`、各功能 README | `docs/README.md` 的分支标题 |
@@ -48,3 +50,17 @@ git push origin dev
 SELinux 开关开启和关闭的内核编译由 `static-reference-test.yml` 验证。
 Manager 完整构建继续使用现有 workflow。
 这种布局减少冲突范围；上游修改同一接口时仍可能需要适配。
+
+## 2026-10-29 同步
+
+从分支 `059a87a5` 合并上游 `b427a3f9`，纳入 8 个提交：Linux 6.19
+preinit 接口适配、mount namespace 系统调用适配、bind mount 下的 `init.rc`
+识别，以及 SUSFS 控制节点的授权和标签修复。
+
+管理器随上游移除安装页的内核模块屏蔽选项和对应参数传递；开发者仍可使用
+ksud 的 `--block-module`。Aster 主界面、全景/标准布局、壁纸、主题、刷新和
+分支更新源均保留。`Flash.kt` 的资源读取适配与上游参数变化同时保留。
+
+本次合并不改写三套参考策略、查询隔离修复、Manager 签名配置或风险扫描默认值。
+内核编译应同时覆盖关闭参考策略及 OriginOS、ColorOS17、HyperOS 三种开启配置；
+UI 验证使用现有 `assemblePreview` 和 `lintPreview`，完整构建使用本分支的 Actions。
