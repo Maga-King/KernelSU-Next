@@ -62,5 +62,13 @@ ksud 的 `--block-module`。Aster 主界面、全景/标准布局、壁纸、主
 分支更新源均保留。`Flash.kt` 的资源读取适配与上游参数变化同时保留。
 
 本次合并不改写三套参考策略、查询隔离修复、Manager 签名配置或风险扫描默认值。
-内核编译应同时覆盖关闭参考策略及 OriginOS、ColorOS17、HyperOS 三种开启配置；
-UI 验证使用现有 `assemblePreview` 和 `lintPreview`，完整构建使用本分支的 Actions。
+按仓库主人本次要求，验收重点为关闭静态参考策略和开启 ColorOS17 参考策略。
+两种配置的 Android 15 / 6.6 内核均已通过 Actions 实际编译：
+https://github.com/Maga-King/KernelSU-Next/actions/runs/40817261327
+这里的关闭仅指静态查询参考功能，不是关闭系统 SELinux enforcing。
+
+23 项回归测试（含 C/Rust 运行测试）和分支 clang-format 18.1.8 检查通过。
+arm64 Aster `assemblePreview` 成功。上游遗漏删除的 22 种语言、110 条
+`install_block_modules*` 文案导致 lint ExtraTranslation 错误，已随同步清理；
+清理后 `lintPreview` 通过，零错误。其余翻译与 Aster 资源保留。
+完整多架构构建按主人要求取消；未进行真机刷入验证。
