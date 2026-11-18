@@ -34,6 +34,7 @@
 static DEFINE_MUTEX(selinux_hide_mutex);
 static bool ksu_selinux_hide_enabled __read_mostly = false;
 static bool ksu_selinux_hide_running __read_mostly = false;
+static bool ksu_selinux_hide_keep_backup __read_mostly = false;
 
 enum sel_inos {
     SEL_ROOT_INO = 2,
@@ -330,7 +331,7 @@ static void initialize_fake_status()
         }
     }
 
-    fake_status = new_page;
+    smp_store_release(&fake_status, new_page);
     pr_info("initialize_fake_status initialized: sequence=%d, policyload=%d, enforcing=%d\n", new_status->sequence,
             new_status->policyload, new_status->enforcing);
 
@@ -343,10 +344,7 @@ static sel_open_handle_status_fn orig_sel_open_handle_status, *sel_open_handle_s
 static int my_sel_open_handle_status(struct inode *inode, struct file *filp)
 {
     if (ksu_selinux_hide_enabled && should_spoof_query()) {
-        void *data;
-        mutex_lock(&selinux_state.status_lock);
-        data = fake_status;
-        mutex_unlock(&selinux_state.status_lock);
+        struct page *data = smp_load_acquire(&fake_status);
         if (data) {
             filp->private_data = data;
             return 0;
@@ -354,7 +352,7 @@ static int my_sel_open_handle_status(struct inode *inode, struct file *filp)
     }
 
     int ret = orig_sel_open_handle_status(inode, filp);
-    if (static_branch_unlikely(&fake_status_initialize_key) && !ret && !fake_status) {
+    if (static_branch_unlikely(&fake_status_initialize_key) && !ret && !READ_ONCE(fake_status)) {
         initialize_fake_status();
     }
     return ret;
@@ -390,6 +388,8 @@ static int ksu_selinux_hide_enable()
     pr_info("selinux_hide: context_write: 0x%lx [%pSb]\n", (unsigned long)*context_write, *context_write);
     write_op_fn my = my_write_context;
     orig_context_write = *context_write;
+    // In-flight query callbacks can outlive unhooking, even after a failed enable.
+    ksu_selinux_hide_keep_backup = true;
     ret = ksu_patch_text(context_write, &my, sizeof(my), KSU_PATCH_TEXT_FLUSH_DCACHE);
     if (ret) {
         pr_err("selinux_hide: init: patch_text context_write err: %d\n", ret);
@@ -488,7 +488,7 @@ void ksu_selinux_hide_handle_second_stage()
 {
     initialize_fake_status();
     // https://github.com/torvalds/linux/blame/e8c2f9fdadee7cbc75134dc463c1e0d856d6e5c7/security/selinux/selinuxfs.c#L2014
-    if (fake_status) {
+    if (READ_ONCE(fake_status)) {
         static_key_disable(&fake_status_initialize_key.key);
     } else {
         pr_warn("selinux_hide: fake status need late initialization\n");
@@ -498,7 +498,7 @@ void ksu_selinux_hide_handle_second_stage()
 void ksu_selinux_hide_handle_post_fs_data()
 {
     static_key_disable(&fake_status_initialize_key.key);
-    if (!fake_status) {
+    if (!READ_ONCE(fake_status)) {
         pr_err("selinux_hide: fake status is not initialized after post-fs-data!\n");
     }
 }
@@ -557,7 +557,7 @@ void __exit ksu_selinux_hide_exit()
 void ksu_selinux_hide_drop_backup_if_unused()
 {
     mutex_lock(&selinux_hide_mutex);
-    if (!ksu_selinux_hide_running && backup_sepolicy) {
+    if (!ksu_selinux_hide_keep_backup && backup_sepolicy) {
         pr_info("selinux_hide is not enabled - drop backup_sepolicy\n");
         sidtab_destroy(backup_sepolicy->sidtab);
         kfree(backup_sepolicy->sidtab);

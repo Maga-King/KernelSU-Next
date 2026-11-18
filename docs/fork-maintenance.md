@@ -72,3 +72,14 @@ arm64 Aster `assemblePreview` 成功。上游遗漏删除的 22 种语言、110 
 `install_block_modules*` 文案导致 lint ExtraTranslation 错误，已随同步清理；
 清理后 `lintPreview` 通过，零错误。其余翻译与 Aster 资源保留。
 完整多架构构建按主人要求取消；未进行真机刷入验证。
+
+## 2026-11-18 同步
+
+从分支 `18d0f0fa` 合并上游 `aa235b99`。保留 Aster、分支签名、风险扫描默认值
+和静态查询参考。上游的策略 generation、AVC 刷新、内核 ABI、Manager 安装和
+ksud 修复一起合入。
+
+`selinux_hide.c` 保留查询与实际授权的边界。查询上下文只在独立参考策略中解析；
+安全状态页使用配对的发布和读取操作，回调可能仍在使用的参考策略不会提前释放。
+上游 `setprocattr` 和 `inode_setxattr` hook 依赖与活动策略关联的备份，
+因此此分支继续把进程转换和文件标签授权交给原生 SELinux。
