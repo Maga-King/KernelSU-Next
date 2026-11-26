@@ -1,0 +1,112 @@
+name: Publish Aster Manager Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag name (e.g. aster-ui-2026.11.26)'
+        required: true
+        type: string
+      release_name:
+        description: 'Release display title'
+        required: true
+        type: string
+      target_sha:
+        description: 'Target commit SHA for the release tag'
+        required: true
+        type: string
+      dynamic_run_id:
+        description: 'Completed Build Manager run ID for Dynamic'
+        required: true
+        type: string
+      hyperos_run_id:
+        description: 'Completed Build Manager run ID for HyperOS'
+        required: true
+        type: string
+      coloros17_run_id:
+        description: 'Completed Build Manager run ID for ColorOS17'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.target_sha }}
+
+      - name: Download, verify, and publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag_name }}
+          TITLE: ${{ inputs.release_name }}
+          TARGET_SHA: ${{ inputs.target_sha }}
+          DYNAMIC_RUN: ${{ inputs.dynamic_run_id }}
+          HYPEROS_RUN: ${{ inputs.hyperos_run_id }}
+          COLOROS17_RUN: ${{ inputs.coloros17_run_id }}
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/release-assets"
+          mkdir -p "$OUT"
+
+          download_variant() {
+            local slug="$1"
+            local run_id="$2"
+            local dir="$RUNNER_TEMP/art-$slug"
+            mkdir -p "$dir"
+            gh run download "$run_id" --name manager --dir "$dir"
+            local apk
+            apk=$(find "$dir" -maxdepth 2 -type f -name 'KernelSU_Next_*_*-release.apk' | head -n 1)
+            test -s "$apk"
+            local base
+            base=$(basename "$apk" .apk)
+            cp -f "$apk" "$OUT/${base}-${slug}.apk"
+            echo "Prepared: $OUT/${base}-${slug}.apk"
+          }
+
+          download_variant "dynamic" "$DYNAMIC_RUN"
+          download_variant "static-HyperOS" "$HYPEROS_RUN"
+          download_variant "static-ColorOS17" "$COLOROS17_RUN"
+
+          python3 scripts/verify_manager_apk.py "$OUT"/*.apk
+
+          (
+            cd "$OUT"
+            sha256sum ./*.apk | sed 's| \./| |' > SHA256SUMS.txt
+            cat SHA256SUMS.txt
+          )
+
+          # Remove any stale draft release for the same tag
+          draft_id=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=30" --jq ".[] | select(.tag_name == \"${TAG}\" and .draft == true) | .id" | head -n 1 || true)
+          if [ -n "$draft_id" ]; then
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/${draft_id}"
+          fi
+
+          cat > "$RUNNER_TEMP/notes.md" <<EOF
+          Three signed manager APKs were built from \`${TARGET_SHA:0:8}\`.
+
+          | APK suffix | Bundled SELinux query reference |
+          | --- | --- |
+          | \`-dynamic.apk\` | Static reference off; uses official dynamic SELinux hide |
+          | \`-static-HyperOS.apk\` | Static HyperOS (澎湃) reference on |
+          | \`-static-ColorOS17.apk\` | Static ColorOS17 reference on |
+
+          This choice does not turn SELinux enforcing on or off. All three APKs are the regular manager variant and share the same application ID and signing certificate. The app updater offers the dynamic APK. Choose the HyperOS or ColorOS17 APK manually when you want that static reference.
+
+          Actions: [Dynamic](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${DYNAMIC_RUN}), [HyperOS](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${HYPEROS_RUN}), and [ColorOS17](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${COLOROS17_RUN}).
+          EOF
+
+          gh release create "$TAG" \
+            "$OUT"/*-dynamic.apk \
+            "$OUT"/*-static-HyperOS.apk \
+            "$OUT"/*-static-ColorOS17.apk \
+            "$OUT/SHA256SUMS.txt" \
+            --target "$TARGET_SHA" \
+            --title "$TITLE" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            --latest
