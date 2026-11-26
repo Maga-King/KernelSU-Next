@@ -83,3 +83,13 @@ ksud 修复一起合入。
 安全状态页使用配对的发布和读取操作，回调可能仍在使用的参考策略不会提前释放。
 上游 `setprocattr` 和 `inode_setxattr` hook 依赖与活动策略关联的备份，
 因此此分支继续把进程转换和文件标签授权交给原生 SELinux。
+
+## 2026-11-26 同步
+
+从分支 `81f5a3ba` 合并上游 `3660779e`（93 个提交）。合入 `logd` 对 `su` 域进程属性
+的读取授权（仅作用于活动策略，不影响静态或动态查询参考）、`ksud` 在
+`disable_module` 与 `clear_config` 中的 `module_id` 格式校验，以及 SUSFS LKM
+分层重构、PAC 安全内联桩、集中式 hook 能力映射和 BTF `lsm_hook` 修复。
+
+Aster UI、分支 Manager 签名固定、风险扫描默认关闭、三套静态 SELinux 查询参考与
+查询隔离边界保持不变。
